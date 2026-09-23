@@ -856,20 +856,38 @@ export function TrustStrip() {
 }
 
 export function ContactCards() {
-  const items: Array<[typeof Phone, string, string]> = [
-    [Phone, "WhatsApp", brand.phone],
+  const whatsappLink = "hover:text-brand-gold";
+  const items: Array<[typeof Phone, string, React.ReactNode]> = [
+    [
+      Phone,
+      "WhatsApp",
+      <>
+        <a className={whatsappLink} href={`https://wa.me/${brand.whatsapp}`} target="_blank" rel="noreferrer">Porto Velho: {brand.phone}</a>
+        <br />
+        <a className={whatsappLink} href={`https://wa.me/${brand.branch.whatsapp}`} target="_blank" rel="noreferrer">Goiânia: {brand.branch.phone}</a>
+      </>,
+    ],
     [Mail, "E-mail", brand.email],
-    [MapPin, "Localização", `${brand.address} · Entregamos para todo o Brasil`],
-    [MapPin, brand.branch.name, `${brand.branch.city} · ${brand.branch.phone}`],
+    [
+      MapPin,
+      "Localização",
+      <>
+        Porto Velho: {brand.address}
+        <br />
+        Goiânia: {brand.branch.city}
+        <br />
+        Entregamos para todo o Brasil
+      </>,
+    ],
   ];
 
   return (
-    <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-      {items.map(([Icon, title, text]) => (
+    <div className="grid gap-5 md:grid-cols-3">
+      {items.map(([Icon, title, content]) => (
         <div key={title} className="border border-brand-gold/20 bg-card p-6">
           <Icon className="h-8 w-8 text-brand-gold" />
           <h3 className="mt-4 font-display text-2xl text-brand-gold">{title}</h3>
-          <p className="mt-2 text-sm text-brand-beige/70">{text}</p>
+          <p className="mt-2 text-sm leading-6 text-brand-beige/70">{content}</p>
         </div>
       ))}
     </div>

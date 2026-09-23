@@ -442,7 +442,7 @@ export const products: Product[] = [
     wood: "Seleção de 10 sabores",
     volume: "10 frascos de 50ml",
     alcohol: "38% vol",
-    price: 130,
+    price: 140,
     image: kitExperiencia,
     summary:
       "Uma experiência completa para quem deseja conhecer a linha Dom Aldino. O kit reúne 10 sabores disponíveis da nossa cachaça artesanal, permitindo comparar e descobrir qual madeira mais agrada ao seu paladar.",
