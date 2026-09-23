@@ -4,9 +4,9 @@ import { useMemo, useState } from "react";
 import { ProductCard, SectionTitle, ShopFilters, products } from "@/components/dom-aldino";
 
 export const Route = createFileRoute("/loja")({
-  validateSearch: (search: Record<string, unknown>): { categoria?: string; ordenar?: string } => ({
-    categoria: typeof search.categoria === "string" ? search.categoria : "Todas",
-    ordenar: typeof search.ordenar === "string" ? search.ordenar : "Mais vendidos",
+  validateSearch: (search: Record<string, unknown>): { categoria: string; ordenar: string } => ({
+    categoria: typeof search["categoria"] === "string" ? search["categoria"] : "Todas",
+    ordenar: typeof search["ordenar"] === "string" ? search["ordenar"] : "Mais vendidos",
   }),
   head: () => ({
     meta: [
@@ -29,9 +29,9 @@ export const Route = createFileRoute("/loja")({
 
 function ShopPage() {
   const search = Route.useSearch();
-  const [selectedCategory, setSelectedCategory] = useState(search.categoria);
+  const [selectedCategory, setSelectedCategory] = useState(search.categoria ?? "Todas");
   const [selectedWood, setSelectedWood] = useState("Todas");
-  const [sort, setSort] = useState(search.ordenar === "novidades" ? "Novidades" : search.ordenar);
+  const [sort, setSort] = useState(search.ordenar === "novidades" ? "Novidades" : search.ordenar ?? "Mais vendidos");
 
   const filteredProducts = useMemo(() => {
     const list = products

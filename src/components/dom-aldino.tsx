@@ -571,7 +571,7 @@ export function ProductCard({ product }: { product: Product }) {
 }
 
 export function Differentials() {
-  const items = [
+  const items: Array<[typeof Wine, string]> = [
     [Wine, "Produção artesanal"],
     [Barrel, "Madeiras nobres"],
     [Truck, "Entrega para todo o Brasil"],
@@ -819,16 +819,18 @@ function FilterSelect({ label, value, onChange, options }: { label: string; valu
 }
 
 export function TrustStrip() {
+  const items: Array<[typeof CheckCircle2, string]> = [
+    [CheckCircle2, "Lotes pequenos e controle artesanal"],
+    [PackageCheck, "Embalagem protegida para envio"],
+    [Award, "Seleção premium para degustação"],
+  ];
+
   return (
     <div className="grid gap-4 sm:grid-cols-3">
-      {[
-        [CheckCircle2, "Lotes pequenos e controle artesanal"],
-        [PackageCheck, "Embalagem protegida para envio"],
-        [Award, "Seleção premium para degustação"],
-      ].map(([Icon, text]) => (
-        <div key={text as string} className="flex items-center gap-3 border border-brand-gold/20 bg-brand-wood/45 p-4 text-sm text-brand-beige/75">
+      {items.map(([Icon, text]) => (
+        <div key={text} className="flex items-center gap-3 border border-brand-gold/20 bg-brand-wood/45 p-4 text-sm text-brand-beige/75">
           <Icon className="h-6 w-6 shrink-0 text-brand-gold" />
-          <span>{text as string}</span>
+          <span>{text}</span>
         </div>
       ))}
     </div>
@@ -836,17 +838,19 @@ export function TrustStrip() {
 }
 
 export function ContactCards() {
+  const items: Array<[typeof Phone, string, string]> = [
+    [Phone, "WhatsApp", brand.phone],
+    [Mail, "E-mail", brand.email],
+    [Shield, "Atendimento", "Segunda a sexta, 9h às 18h"],
+  ];
+
   return (
     <div className="grid gap-5 md:grid-cols-3">
-      {[
-        [Phone, "WhatsApp", brand.phone],
-        [Mail, "E-mail", brand.email],
-        [Shield, "Atendimento", "Segunda a sexta, 9h às 18h"],
-      ].map(([Icon, title, text]) => (
-        <div key={title as string} className="border border-brand-gold/20 bg-card p-6">
+      {items.map(([Icon, title, text]) => (
+        <div key={title} className="border border-brand-gold/20 bg-card p-6">
           <Icon className="h-8 w-8 text-brand-gold" />
-          <h3 className="mt-4 font-display text-2xl text-brand-gold">{title as string}</h3>
-          <p className="mt-2 text-sm text-brand-beige/70">{text as string}</p>
+          <h3 className="mt-4 font-display text-2xl text-brand-gold">{title}</h3>
+          <p className="mt-2 text-sm text-brand-beige/70">{text}</p>
         </div>
       ))}
     </div>
@@ -862,4 +866,4 @@ function Flourish({ className }: { className?: string }) {
   );
 }
 
-export { brand, categories, products, formatCurrency };
+export { brand, categories, products, formatCurrency, getProduct };
