@@ -30,7 +30,7 @@ function StoryPage() {
       <section className="mx-auto max-w-5xl px-4 pt-12 sm:px-6">
         <SectionTitle eyebrow="Cachaçaria Premium Dom Aldino" title="Nossa história" />
         <div className="overflow-hidden border border-brand-gold/25">
-          <img src={story.image} alt="Garrafa Dom Aldino Carvalho Americano com canas-de-açúcar e copo, diante do alambique de cobre e do barril da marca" className="w-full object-cover" width={1536} height={1024} />
+          <img src={story.image} alt="Garrafa Dom Aldino Barril de Carvalho e copo sobre a mesa, diante de barris da marca e alambiques de cobre" className="w-full object-cover" width={1536} height={1024} />
         </div>
         <div className="mx-auto mt-12 max-w-3xl space-y-6 leading-8 text-brand-beige/80">
           {story.full.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}

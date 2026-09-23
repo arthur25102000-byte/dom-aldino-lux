@@ -597,7 +597,7 @@ export function StorySection({ compact = false }: { compact?: boolean }) {
     <section className={cn("bg-brand-black py-16 sm:py-24", compact && "py-12")}>
       <div className="mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
         <div className="relative overflow-hidden border border-brand-gold/25">
-          <img src={story.image} alt="Garrafa Dom Aldino Carvalho Americano com canas-de-açúcar e copo, diante do alambique de cobre e do barril da marca" className="h-full min-h-[360px] w-full object-cover" loading="lazy" width={900} height={720} />
+          <img src={story.image} alt="Garrafa Dom Aldino Barril de Carvalho e copo sobre a mesa, diante de barris da marca e alambiques de cobre" className="h-full min-h-[360px] w-full object-cover" loading="lazy" width={900} height={720} />
           <div className="absolute inset-0 bg-gradient-to-t from-brand-black/65 to-transparent" />
           <div className="absolute bottom-6 left-6 border border-brand-gold/50 bg-brand-black/70 px-5 py-4 backdrop-blur">
             <p className="font-display text-2xl text-brand-gold">Desde a origem</p>
@@ -675,6 +675,8 @@ function SiteFooter() {
             <p className="flex items-center gap-2"><MapPin className="h-4 w-4 text-brand-gold" /> {brand.address}</p>
             <a className="block hover:text-brand-gold" href={`https://wa.me/${brand.whatsapp}`} target="_blank" rel="noreferrer">{brand.phone}</a>
             <a className="block hover:text-brand-gold" href={`mailto:${brand.email}`}>{brand.email}</a>
+            <p className="flex items-center gap-2"><MapPin className="h-4 w-4 text-brand-gold" /> {brand.branch.name}</p>
+            <a className="block hover:text-brand-gold" href={`https://wa.me/${brand.branch.whatsapp}`} target="_blank" rel="noreferrer">{brand.branch.phone}</a>
             <a className="flex items-center gap-2 hover:text-brand-gold" href={brand.instagramUrl} target="_blank" rel="noreferrer"><Instagram className="h-4 w-4 text-brand-gold" /> {brand.instagram}</a>
             <a className="flex items-center gap-2 hover:text-brand-gold" href={brand.facebookUrl} target="_blank" rel="noreferrer"><Facebook className="h-4 w-4 text-brand-gold" /> Facebook</a>
           </div>
@@ -858,10 +860,11 @@ export function ContactCards() {
     [Phone, "WhatsApp", brand.phone],
     [Mail, "E-mail", brand.email],
     [MapPin, "Localização", `${brand.address} · Entregamos para todo o Brasil`],
+    [MapPin, brand.branch.name, `${brand.branch.city} · ${brand.branch.phone}`],
   ];
 
   return (
-    <div className="grid gap-5 md:grid-cols-3">
+    <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
       {items.map(([Icon, title, text]) => (
         <div key={title} className="border border-brand-gold/20 bg-card p-6">
           <Icon className="h-8 w-8 text-brand-gold" />

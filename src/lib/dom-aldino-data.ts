@@ -2,7 +2,7 @@ import logo from "@/assets/dom-aldino-logo.webp";
 import sceneBarricaria from "@/assets/cena-barricaria.jpg";
 import sceneCaixaDeMadeira from "@/assets/cena-caixa-de-madeira.jpg";
 import sceneKitExperiencia from "@/assets/cena-kit-experiencia.jpg";
-import sceneNossaHistoria from "@/assets/cena-nossa-historia.jpg";
+import cenaBarrilGarrafa from "@/assets/cena-barril-garrafa.jpg";
 import amburanaBrasileira from "@/assets/produtos/amburana-brasileira.jpg";
 import amendoimDoCampo from "@/assets/produtos/amendoim-do-campo.jpg";
 import balsamoBrasileiro from "@/assets/produtos/balsamo-brasileiro.jpg";
@@ -56,6 +56,12 @@ export const brand = {
   phone: "+55 69 99291-2092",
   email: "cachacaria.dom.aldino@gmail.com",
   address: "Porto Velho, RO",
+  branch: {
+    name: "Filial Goiânia",
+    city: "Goiânia, GO",
+    phone: "+55 62 99805-9242",
+    whatsapp: "5562998059242",
+  },
   instagram: "@dom.aldino",
   instagramUrl: "https://www.instagram.com/dom.aldino/",
   facebookUrl: "https://www.facebook.com/profile.php?id=61586859806641",
@@ -65,7 +71,7 @@ export const brand = {
 };
 
 export const story = {
-  image: sceneNossaHistoria,
+  image: cenaBarrilGarrafa,
   summary: [
     "Tudo começou em 2023, quando reformei um apartamento maior e combinei com a minha esposa fazer um barzinho na sala. Seria um espaço para guardar bebidas e ter algo para oferecer aos amigos, aos irmãos de maçonaria e às visitas.",
     "Foi ali que me apaixonei pelo mundo do whisky. Estudei, fiz cursos de degustação e cheguei ao ponto de desenvolver o meu próprio blend. Até que, no início de 2024, descobri a cachaça: mesmo processo de fabricação, mesmos barris, com a vantagem de poder usar a madeira brasileira, mais de trinta opções diferentes para envelhecer.",
@@ -120,7 +126,7 @@ export type Category = { name: string; image: string; description?: string };
 export const ALL_CATEGORIES = "Todos";
 
 export const categories: Category[] = [
-  { name: ALL_CATEGORIES, image: sceneNossaHistoria },
+  { name: ALL_CATEGORIES, image: cenaBarrilGarrafa },
   { name: "Envelhecidas", image: carvalhoAmericano },
   { name: "Blend", image: landmarks },
   { name: "Presente", image: kitExperiencia },
@@ -150,7 +156,7 @@ export const products: Product[] = [
     wood: "Carvalho Americano",
     volume: "750ml",
     alcohol: "38% vol",
-    price: 65,
+    price: 75,
     image: carvalhoAmericano,
     summary:
       "O Carvalho Americano, predominantemente proveniente de regiões como o estado do Kentucky nos EUA, é amplamente utilizado na indústria global de destilados, em especial na produção dos destilados dos Estados Unidos, a exemplo do bourbon.",
@@ -175,7 +181,7 @@ export const products: Product[] = [
     wood: "Carvalho Francês",
     volume: "750ml",
     alcohol: "38% vol",
-    price: 65,
+    price: 75,
     image: carvalhoFrances,
     summary:
       "O Carvalho Francês é renomado globalmente por seu uso em destilados finos e na produção de vinhos de alta qualidade. Na cachaça, o uso de barris novos de Carvalho Francês é uma inovação que busca elevar o padrão e a sofisticação da bebida, alinhando-a com padrões internacionais de envelhecimento e sabor.",
@@ -205,7 +211,7 @@ export const products: Product[] = [
     wood: "Carvalho Europeu",
     volume: "750ml",
     alcohol: "38% vol",
-    price: 65,
+    price: 75,
     image: carvalhoEuropeu,
     summary:
       "A sofisticação desta madeira reflete-se na qualidade e na delicadeza dos aromas da cachaça. No Brasil, atualmente, o carvalho europeu está entre as madeiras mais utilizadas na produção de cachaças que buscam experimentar e diversificar os perfis sensoriais da bebida.",
@@ -229,7 +235,7 @@ export const products: Product[] = [
     wood: "Amburana",
     volume: "750ml",
     alcohol: "38% vol",
-    price: 65,
+    price: 75,
     image: amburanaBrasileira,
     summary:
       "A utilização da Amburana, também conhecida como cerejeira, é uma tradição brasileira, e sua escolha na produção de cachaças é uma maneira de valorizar e respeitar o patrimônio cultural e os métodos tradicionais do país.",
@@ -254,7 +260,7 @@ export const products: Product[] = [
     wood: "Bálsamo",
     volume: "750ml",
     alcohol: "38% vol",
-    price: 65,
+    price: 75,
     image: balsamoBrasileiro,
     summary:
       "O Bálsamo é uma madeira brasileira tradicionalmente usada no armazenamento de cachaça na região norte de Minas Gerais. A sua utilização remonta às origens da produção da cachaça, oferecendo uma identidade singular e autêntica à bebida.",
@@ -277,7 +283,7 @@ export const products: Product[] = [
     wood: "Jequitibá Rosa",
     volume: "750ml",
     alcohol: "38% vol",
-    price: 65,
+    price: 75,
     image: jequitibaRosa,
     summary:
       "O Jequitibá é uma madeira genuinamente brasileira, utilizada especialmente para cachaças que se querem mais neutras em sabor e mantendo um paladar aveludado original da aguardente.",
@@ -301,7 +307,7 @@ export const products: Product[] = [
     wood: "Sassafrás",
     volume: "750ml",
     alcohol: "38% vol",
-    price: 65,
+    price: 75,
     image: sassafras,
     summary:
       "A cachaça envelhecida ou armazenada em barris de canela-sassafrás, uma madeira rara da Mata Atlântica, é uma bebida rara e muito aromática. A bebida apresenta um perfil sensorial exótico. A madeira transfere para o destilado notas adocicadas de canela, hortelã e cardamomo, deixando um final macio, refrescante e um visual amarelado brilhante.",
@@ -327,7 +333,7 @@ export const products: Product[] = [
     wood: "Amendoim do Campo",
     volume: "750ml",
     alcohol: "38% vol",
-    price: 65,
+    price: 75,
     image: amendoimDoCampo,
     summary:
       "A cachaça envelhecida ou armazenada em amendoim-do-campo (também conhecido como amendoim-bravo) é uma das mais valorizadas pelos apreciadores que buscam preservar a identidade sensorial da cana-de-açúcar.",
@@ -354,7 +360,7 @@ export const products: Product[] = [
     wood: "Blend de 5 madeiras",
     volume: "750ml",
     alcohol: "38% vol",
-    price: 65,
+    price: 75,
     image: justaEPerfeita,
     summary:
       "Um blend de cinco madeiras que cria uma cachaça de extrema complexidade, equilibrando notas doces, herbais e especiarias. Cada madeira contribui com uma característica sensorial específica.",
@@ -376,7 +382,7 @@ export const products: Product[] = [
     wood: "Blend de 3 carvalhos",
     volume: "750ml",
     alcohol: "38% vol",
-    price: 65,
+    price: 75,
     image: landmarks,
     summary:
       "Cachaça Landmarks é um verdadeiro marco na terra. É um Blend de 3 madeiras: Carvalhos Americano, Francês e Europeu que oferecem complexidade, unindo a baunilha e coco (Americano) com especiarias, estrutura tânica (Europeu) e sutileza (Francês).",
@@ -404,7 +410,7 @@ export const products: Product[] = [
     wood: "Blend de 4 madeiras",
     volume: "750ml",
     alcohol: "38% vol",
-    price: 65,
+    price: 75,
     image: blend4Madeiras,
     summary:
       "A cachaça blend de 4 madeiras (Carvalho Americano, Europeu, Bálsamo e Amburana) é uma bebida sofisticada que combina o perfil adocicado e de baunilha dos carvalhos com as notas exóticas de especiarias e coco das madeiras brasileiras, resultando em uma experiência suave, complexa e rica em aromas e sabores, com cor dourada e final persistente, ideal para degustação pura ou harmonizações.",
@@ -459,7 +465,7 @@ export const products: Product[] = [
     wood: "Sabor à sua escolha",
     volume: "750ml",
     alcohol: "38% vol",
-    price: 130,
+    price: 140,
     image: caixaDeMadeira,
     summary:
       "Este é um item para presentear, cuidadosamente elaborado e preparado pela Cachaçaria Premium Dom Aldino. A caixa é em MDF personalizado para a Dom Aldino.",
@@ -481,7 +487,7 @@ export const products: Product[] = [
     wood: "Carvalho Americano",
     volume: "500ml",
     alcohol: "38% vol",
-    price: 130,
+    price: 140,
     image: garrafaSacoVeludo,
     summary:
       "Este é um excelente item para presentear, cuidadosamente elaborado pela Cachaçaria Premium Dom Aldino. A embalagem é um saco de veludo personalizado com a marca Dom Aldino e a garrafa é diferenciada, pensada anatomicamente.",
@@ -514,7 +520,7 @@ export const products: Product[] = [
     wood: "Inox (sem madeira)",
     volume: "750ml",
     alcohol: "38% vol",
-    price: 65,
+    price: 75,
     image: prataInNatura,
     summary:
       "Nosso rótulo prata, não envelhecida em barris de madeira, traz a pureza da cachaça de Alambique, branquinha e pura, \"in natura\".",
