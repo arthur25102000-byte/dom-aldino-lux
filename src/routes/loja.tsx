@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { ProductCard, SectionTitle, ShopFilters, products } from "@/components/dom-aldino";
 
 export const Route = createFileRoute("/loja")({
-  validateSearch: (search: Record<string, unknown>): { categoria: string; ordenar: string } => ({
+  validateSearch: (search: Record<string, unknown>): { categoria?: string; ordenar?: string } => ({
     categoria: typeof search["categoria"] === "string" ? search["categoria"] : "Todas",
     ordenar: typeof search["ordenar"] === "string" ? search["ordenar"] : "Mais vendidos",
   }),

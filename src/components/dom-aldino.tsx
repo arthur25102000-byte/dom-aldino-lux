@@ -44,7 +44,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { brand, categories, formatCurrency, heroSlides, products, type CartItem, type Product, whatsappCheckoutUrl } from "@/lib/dom-aldino-data";
+import { brand, categories, formatCurrency, getProduct, heroSlides, products, type CartItem, type Product, whatsappCheckoutUrl } from "@/lib/dom-aldino-data";
 import { cn } from "@/lib/utils";
 
 const CartContext = createContext<{
