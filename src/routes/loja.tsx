@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 
-import { ProductCard, SectionTitle, ShopFilters, products } from "@/components/dom-aldino";
+import { ALL_CATEGORIES, ProductCard, SectionTitle, ShopFilters, products } from "@/components/dom-aldino";
 
 export const Route = createFileRoute("/loja")({
   validateSearch: (search: Record<string, unknown>): { categoria?: string; ordenar?: string } => ({
-    categoria: typeof search["categoria"] === "string" ? search["categoria"] : "Todas",
+    categoria: typeof search["categoria"] === "string" ? search["categoria"] : ALL_CATEGORIES,
     ordenar: typeof search["ordenar"] === "string" ? search["ordenar"] : "Mais vendidos",
   }),
   head: () => ({
@@ -29,13 +29,13 @@ export const Route = createFileRoute("/loja")({
 
 function ShopPage() {
   const search = Route.useSearch();
-  const [selectedCategory, setSelectedCategory] = useState(search.categoria ?? "Todas");
+  const [selectedCategory, setSelectedCategory] = useState(search.categoria ?? ALL_CATEGORIES);
   const [selectedWood, setSelectedWood] = useState("Todas");
   const [sort, setSort] = useState(search.ordenar === "novidades" ? "Novidades" : search.ordenar ?? "Mais vendidos");
 
   const filteredProducts = useMemo(() => {
     const list = products
-      .filter((product) => selectedCategory === "Todas" || product.category === selectedCategory)
+      .filter((product) => selectedCategory === ALL_CATEGORIES || product.category === selectedCategory)
       .filter((product) => selectedWood === "Todas" || product.wood === selectedWood);
 
     return [...list].sort((a, b) => {

@@ -9,6 +9,7 @@ import {
   SectionTitle,
   StorySection,
   TrustStrip,
+  products,
 } from "@/components/dom-aldino";
 import { Button } from "@/components/ui/button";
 
@@ -35,6 +36,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
+  const hasShowcase = products.some((product) => product.featured || product.launch);
   return (
     <>
       <HeroSlider />
@@ -43,12 +45,13 @@ function Index() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <SectionTitle
             eyebrow="Compre por categoria"
-            title="Madeiras, aromas e ocasiões"
-            text="Escolha por perfil sensorial, envelhecimento ou presente. Cada categoria destaca uma expressão da cachaça artesanal brasileira."
+            title="Cachaças artesanais"
+            text="Envelhecidas em madeiras nobres, blends autorais, a pureza da prata e opções especiais para presentear."
           />
-          <CategoryGrid limit={8} />
+          <CategoryGrid />
         </div>
       </section>
+      {hasShowcase ? (
       <section className="bg-brand-smoke py-16 sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <ProductCarousel title="Mais vendidos" kind="featured" />
@@ -60,6 +63,7 @@ function Index() {
           </div>
         </div>
       </section>
+      ) : null}
       <StorySection />
       <section className="bg-brand-black py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">

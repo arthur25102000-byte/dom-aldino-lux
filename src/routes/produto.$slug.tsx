@@ -43,7 +43,11 @@ function ProductPage() {
   const { product } = Route.useLoaderData();
   const { addItem } = useCart();
   const [quantity, setQuantity] = useState(1);
-  const related = products.filter((item) => item.slug !== product.slug).slice(0, 3);
+  const others = products.filter((item) => item.slug !== product.slug);
+  const related = [
+    ...others.filter((item) => item.category === product.category),
+    ...others.filter((item) => item.category !== product.category),
+  ].slice(0, 3);
 
   return (
     <div className="bg-brand-black pt-36">
@@ -52,27 +56,18 @@ function ProductPage() {
           Voltar para loja
         </Link>
         <div className="mt-8 grid gap-10 lg:grid-cols-[1fr_0.92fr] lg:items-start">
-          <div className="grid gap-4 sm:grid-cols-[96px_1fr]">
-            <div className="order-2 grid grid-cols-3 gap-3 sm:order-1 sm:grid-cols-1">
-              {[product.image, product.image, product.image].map((image, index) => (
-                <div key={index} className="aspect-square overflow-hidden border border-brand-gold/20 bg-card p-1">
-                  <img src={image} alt={`${product.name} imagem ${index + 1}`} className="h-full w-full object-cover" loading="lazy" width={120} height={120} />
-                </div>
-              ))}
-            </div>
-            <div className="order-1 overflow-hidden border border-brand-gold/25 bg-card sm:order-2">
-              <img src={product.image} alt={product.name} className="aspect-[4/5] w-full object-cover" width={780} height={980} />
-            </div>
+          <div className="overflow-hidden border border-brand-gold/25 bg-card">
+            <img src={product.image} alt={product.name} className="aspect-[3/4] w-full object-cover" width={780} height={1040} />
           </div>
           <div>
             {product.badge ? <span className="border border-brand-gold bg-brand-wood px-3 py-1 text-[0.65rem] font-bold uppercase tracking-[0.2em] text-brand-gold">{product.badge}</span> : null}
             <h1 className="mt-4 font-display text-4xl gold-emboss sm:text-5xl">{product.name}</h1>
             <p className="mt-3 text-sm uppercase tracking-[0.22em] text-brand-beige/60">{product.wood} · {product.volume} · {product.alcohol}</p>
-            <p className="mt-6 leading-8 text-brand-beige/78">{product.description}</p>
+            <p className="mt-6 leading-8 text-brand-beige/78">{product.summary}</p>
             <div className="mt-7">
               {product.oldPrice ? <span className="mr-3 text-lg text-brand-beige/45 line-through">{formatCurrency(product.oldPrice)}</span> : null}
               <span className="text-4xl font-bold text-brand-gold">{formatCurrency(product.price)}</span>
-              <p className="mt-2 text-sm text-brand-beige/65">{product.installment}</p>
+              {product.installment ? <p className="mt-2 text-sm text-brand-beige/65">{product.installment}</p> : null}
             </div>
             <div className="mt-7 flex flex-col gap-4 sm:flex-row sm:items-center">
               <QuantityControl quantity={quantity} setQuantity={setQuantity} />

@@ -6,17 +6,18 @@ import {
   ChevronLeft,
   ChevronRight,
   Crown,
+  Facebook,
   Filter,
   Gift,
   Instagram,
   Mail,
+  MapPin,
   Menu,
   Minus,
   PackageCheck,
   Phone,
   Plus,
   Search,
-  Shield,
   ShieldCheck,
   ShoppingBag,
   Trash2,
@@ -44,7 +45,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { brand, categories, formatCurrency, getProduct, heroSlides, products, type CartItem, type Product, whatsappCheckoutUrl } from "@/lib/dom-aldino-data";
+import { ALL_CATEGORIES, FEATURED_LIMIT, brand, categories, formatCurrency, getProduct, heroSlides, products, story, type CartItem, type Product, whatsappCheckoutUrl } from "@/lib/dom-aldino-data";
 import { cn } from "@/lib/utils";
 
 const CartContext = createContext<{
@@ -351,13 +352,10 @@ function CartDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (open
                 ))}
               </div>
               <div className="mt-5 border-t border-brand-gold/25 pt-5">
-                <label className="text-xs uppercase tracking-[0.22em] text-brand-gold" htmlFor="cep">Calcular frete</label>
-                <input
-                  id="cep"
-                  className="mt-2 w-full rounded border border-brand-gold/25 bg-brand-black px-3 py-3 text-sm text-brand-beige outline-none focus:border-brand-gold"
-                  placeholder="Digite seu CEP"
-                  inputMode="numeric"
-                />
+                <p className="flex items-center gap-2 text-xs uppercase tracking-[0.22em] text-brand-gold">
+                  <Truck className="h-4 w-4" aria-hidden="true" /> {brand.shipping}
+                </p>
+                <p className="mt-2 text-sm text-brand-beige/65">Enviamos para todo o Brasil. O valor do frete é combinado pelo WhatsApp.</p>
                 <div className="mt-5 flex items-center justify-between text-lg">
                   <span>Subtotal</span>
                   <strong className="text-brand-gold">{formatCurrency(subtotal)}</strong>
@@ -450,7 +448,7 @@ function HeroCta({ active }: { active: number }) {
   if (active === 2) {
     return (
       <Button asChild className={className}>
-        <Link to="/loja" search={{ categoria: "Kits e Presentes" }}>Kits para presente</Link>
+        <Link to="/loja" search={{ categoria: "Presente" }}>Kits para presente</Link>
       </Button>
     );
   }
@@ -479,13 +477,13 @@ export function SectionTitle({ eyebrow, title, text }: { eyebrow?: string; title
 export function CategoryGrid({ limit }: { limit?: number }) {
   const list = typeof limit === "number" ? categories.slice(0, limit) : categories;
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+    <div className="flex flex-wrap justify-center gap-4">
       {list.map((category) => (
         <Link
           key={category.name}
           to="/loja"
-          search={{ categoria: category.name }}
-          className="group text-center"
+          search={category.name === ALL_CATEGORIES ? {} : { categoria: category.name }}
+          className="group w-[calc((100%-1rem)/2)] text-center sm:w-[calc((100%-2rem)/3)] lg:w-[calc((100%-4rem)/5)]"
         >
           <div className="mx-auto aspect-square overflow-hidden rounded-t-full border border-brand-gold/45 bg-brand-wood p-2 transition-all duration-300 group-hover:border-brand-gold group-hover:shadow-[0_0_28px_color-mix(in_oklch,var(--brand-gold)_20%,transparent)]">
             <img
@@ -498,7 +496,7 @@ export function CategoryGrid({ limit }: { limit?: number }) {
             />
           </div>
           <h3 className="mt-4 font-display text-xl text-brand-gold">{category.name}</h3>
-          <p className="mt-1 hidden text-xs leading-5 text-brand-beige/65 sm:block">{category.description}</p>
+          {category.description ? <p className="mt-1 hidden text-xs leading-5 text-brand-beige/65 sm:block">{category.description}</p> : null}
         </Link>
       ))}
     </div>
@@ -506,7 +504,10 @@ export function CategoryGrid({ limit }: { limit?: number }) {
 }
 
 export function ProductCarousel({ title, kind }: { title: string; kind: "featured" | "launch" }) {
-  const list = products.filter((product) => (kind === "featured" ? product.featured : product.launch));
+  const list = kind === "featured"
+    ? products.filter((product) => product.featured).slice(0, FEATURED_LIMIT)
+    : products.filter((product) => product.launch);
+  if (list.length === 0) return null;
   return (
     <section className="py-12">
       <div className="mb-6 flex items-end justify-between gap-4">
@@ -560,7 +561,7 @@ export function ProductCard({ product }: { product: Product }) {
         <div className="mt-4">
           {product.oldPrice ? <span className="mr-2 text-sm text-brand-beige/45 line-through">{formatCurrency(product.oldPrice)}</span> : null}
           <span className="text-2xl font-bold text-brand-gold">{formatCurrency(product.price)}</span>
-          <p className="mt-1 text-xs text-brand-beige/65">{product.installment}</p>
+          {product.installment ? <p className="mt-1 text-xs text-brand-beige/65">{product.installment}</p> : null}
         </div>
         <Button type="button" className="mt-5 w-full rounded bg-primary text-primary-foreground hover:bg-brand-beige hover:text-brand-black" onClick={() => addItem(product)}>
           <ShoppingBag className="h-4 w-4" /> Adicionar ao carrinho
@@ -596,7 +597,7 @@ export function StorySection({ compact = false }: { compact?: boolean }) {
     <section className={cn("bg-brand-black py-16 sm:py-24", compact && "py-12")}>
       <div className="mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
         <div className="relative overflow-hidden border border-brand-gold/25">
-          <img src={heroSlides[0]?.image} alt="Barris de carvalho Dom Aldino" className="h-full min-h-[360px] w-full object-cover" loading="lazy" width={900} height={720} />
+          <img src={story.image} alt="Garrafa Dom Aldino Carvalho Americano com canas-de-açúcar e copo, diante do alambique de cobre e do barril da marca" className="h-full min-h-[360px] w-full object-cover" loading="lazy" width={900} height={720} />
           <div className="absolute inset-0 bg-gradient-to-t from-brand-black/65 to-transparent" />
           <div className="absolute bottom-6 left-6 border border-brand-gold/50 bg-brand-black/70 px-5 py-4 backdrop-blur">
             <p className="font-display text-2xl text-brand-gold">Desde a origem</p>
@@ -605,15 +606,12 @@ export function StorySection({ compact = false }: { compact?: boolean }) {
         </div>
         <div className="fade-up">
           <p className="text-xs font-semibold uppercase tracking-[0.35em] text-brand-gold">Nossa História</p>
-          <h2 className="mt-4 font-display text-4xl gold-emboss sm:text-5xl">O cuidado do alambique ao brinde</h2>
-          <p className="mt-6 leading-8 text-brand-beige/78">
-            A Dom Aldino nasce da paciência artesanal: cana selecionada, destilação cuidadosa e repouso em madeiras nobres. Cada lote busca preservar o caráter brasileiro da cachaça com acabamento premium, aroma marcante e identidade de origem.
-          </p>
-          <p className="mt-4 leading-8 text-brand-beige/78">
-            Nosso processo valoriza o tempo de envelhecimento, a escolha da madeira e o equilíbrio sensorial, criando rótulos para degustação, presentes e celebrações especiais.
-          </p>
+          <h2 className="mt-4 font-display text-4xl gold-emboss sm:text-5xl">Conheça a história da Dom Aldino</h2>
+          {story.summary.map((paragraph, index) => (
+            <p key={paragraph} className={cn("leading-8 text-brand-beige/78", index === 0 ? "mt-6" : "mt-4")}>{paragraph}</p>
+          ))}
           <Button asChild className="mt-8 rounded bg-primary text-primary-foreground hover:bg-brand-beige hover:text-brand-black">
-            <Link to="/nossa-historia">Conheça nossa história</Link>
+            <Link to="/nossa-historia">Ler a história completa</Link>
           </Button>
         </div>
       </div>
@@ -666,7 +664,7 @@ function SiteFooter() {
         <div>
           <h3 className="text-xs font-semibold uppercase tracking-[0.25em] text-brand-gold">Pagamento</h3>
           <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs text-brand-beige/70">
-            {['Pix', 'Visa', 'Master', 'Elo', 'Boleto', '3x'].map((item) => (
+            {brand.payments.map((item) => (
               <span key={item} className="border border-brand-gold/20 py-2">{item}</span>
             ))}
           </div>
@@ -674,10 +672,11 @@ function SiteFooter() {
         <div>
           <h3 className="text-xs font-semibold uppercase tracking-[0.25em] text-brand-gold">Contato</h3>
           <div className="mt-4 space-y-3 text-sm text-brand-beige/70">
-            <p>{brand.address}</p>
-            <p>{brand.phone}</p>
-            <p>{brand.email}</p>
-            <p className="flex items-center gap-2"><Instagram className="h-4 w-4 text-brand-gold" /> {brand.instagram}</p>
+            <p className="flex items-center gap-2"><MapPin className="h-4 w-4 text-brand-gold" /> {brand.address}</p>
+            <a className="block hover:text-brand-gold" href={`https://wa.me/${brand.whatsapp}`} target="_blank" rel="noreferrer">{brand.phone}</a>
+            <a className="block hover:text-brand-gold" href={`mailto:${brand.email}`}>{brand.email}</a>
+            <a className="flex items-center gap-2 hover:text-brand-gold" href={brand.instagramUrl} target="_blank" rel="noreferrer"><Instagram className="h-4 w-4 text-brand-gold" /> {brand.instagram}</a>
+            <a className="flex items-center gap-2 hover:text-brand-gold" href={brand.facebookUrl} target="_blank" rel="noreferrer"><Facebook className="h-4 w-4 text-brand-gold" /> Facebook</a>
           </div>
         </div>
       </div>
@@ -728,29 +727,44 @@ export function QuantityControl({ quantity, setQuantity }: { quantity: number; s
 }
 
 export function ProductTabs({ product }: { product: Product }) {
+  const notes = [
+    ["Aroma", product.tasting?.aroma],
+    ["Sabor", product.tasting?.flavor],
+    ["Final", product.tasting?.finish],
+  ].filter((note): note is [string, string] => Boolean(note[1]));
+  const tabs: Array<[string, string]> = [
+    ["descricao", "Descrição"],
+    ...(notes.length ? [["notas", "Notas"] as [string, string]] : []),
+    ...(product.pairing ? [["harmonizacao", "Harmonização"] as [string, string]] : []),
+    ["ficha", "Ficha técnica"],
+  ];
+  const panel = "border border-t-0 border-brand-gold/20 bg-brand-black/60 p-6";
   return (
     <Tabs defaultValue="descricao" className="mt-12">
-      <TabsList className="grid h-auto grid-cols-2 rounded-none border border-brand-gold/20 bg-brand-wood p-1 sm:grid-cols-4">
-        <TabsTrigger value="descricao" className="rounded data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Descrição</TabsTrigger>
-        <TabsTrigger value="notas" className="rounded data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Notas</TabsTrigger>
-        <TabsTrigger value="harmonizacao" className="rounded data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Harmonização</TabsTrigger>
-        <TabsTrigger value="ficha" className="rounded data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Ficha técnica</TabsTrigger>
+      <TabsList className={cn("grid h-auto grid-cols-2 rounded-none border border-brand-gold/20 bg-brand-wood p-1", tabs.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-4")}>
+        {tabs.map(([value, label]) => (
+          <TabsTrigger key={value} value={value} className="rounded data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">{label}</TabsTrigger>
+        ))}
       </TabsList>
-      <TabsContent value="descricao" className="border border-t-0 border-brand-gold/20 bg-brand-black/60 p-6 leading-8 text-brand-beige/78">{product.description}</TabsContent>
-      <TabsContent value="notas" className="border border-t-0 border-brand-gold/20 bg-brand-black/60 p-6">
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Note title="Aroma" text={product.tasting.aroma} />
-          <Note title="Sabor" text={product.tasting.flavor} />
-          <Note title="Final" text={product.tasting.finish} />
-        </div>
+      <TabsContent value="descricao" className={cn(panel, "space-y-4 leading-8 text-brand-beige/78")}>
+        {product.description.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
       </TabsContent>
-      <TabsContent value="harmonizacao" className="border border-t-0 border-brand-gold/20 bg-brand-black/60 p-6 leading-8 text-brand-beige/78">{product.pairing}</TabsContent>
-      <TabsContent value="ficha" className="border border-t-0 border-brand-gold/20 bg-brand-black/60 p-6">
+      {notes.length ? (
+        <TabsContent value="notas" className={panel}>
+          <div className={cn("grid gap-4", notes.length > 1 && "sm:grid-cols-2", notes.length > 2 && "lg:grid-cols-3")}>
+            {notes.map(([title, text]) => <Note key={title} title={title} text={text} />)}
+          </div>
+        </TabsContent>
+      ) : null}
+      {product.pairing ? (
+        <TabsContent value="harmonizacao" className={cn(panel, "leading-8 text-brand-beige/78")}>{product.pairing}</TabsContent>
+      ) : null}
+      <TabsContent value="ficha" className={panel}>
         <dl className="grid gap-3 sm:grid-cols-2">
           {product.specs.map(([key, value]) => (
             <div key={key} className="flex justify-between gap-4 border-b border-brand-gold/15 pb-3">
               <dt className="text-brand-beige/60">{key}</dt>
-              <dd className="font-semibold text-brand-gold">{value}</dd>
+              <dd className="text-right font-semibold text-brand-gold">{value}</dd>
             </div>
           ))}
         </dl>
@@ -777,26 +791,28 @@ export function ShopFilters({ selectedCategory, onCategoryChange, selectedWood, 
   onSortChange: (value: string) => void;
 }) {
   const woods = Array.from(new Set(products.map((product) => product.wood)));
+  const prices = products.map((product) => product.price);
+  const volumes = Array.from(new Set(products.map((product) => product.volume)));
   return (
     <aside className="border border-brand-gold/20 bg-brand-wood/70 p-5 lg:sticky lg:top-32 lg:self-start">
       <div className="mb-5 flex items-center gap-2 text-brand-gold">
         <Filter className="h-5 w-5" />
         <h2 className="font-display text-2xl">Filtros</h2>
       </div>
-      <FilterSelect label="Categoria" value={selectedCategory} onChange={onCategoryChange} options={["Todas", ...categories.map((category) => category.name)]} />
+      <FilterSelect label="Categoria" value={selectedCategory} onChange={onCategoryChange} options={categories.map((category) => category.name)} />
       <FilterSelect label="Madeira" value={selectedWood} onChange={onWoodChange} options={["Todas", ...woods]} />
       <FilterSelect label="Ordenar" value={sort} onChange={onSortChange} options={["Mais vendidos", "Menor preço", "Maior preço", "Novidades"]} />
       <div className="mt-5 border-t border-brand-gold/15 pt-5">
         <p className="text-xs uppercase tracking-[0.22em] text-brand-gold">Faixa de preço</p>
         <div className="mt-3 grid grid-cols-2 gap-2 text-sm text-brand-beige/70">
-          <span className="border border-brand-gold/20 px-3 py-2">R$ 100</span>
-          <span className="border border-brand-gold/20 px-3 py-2">R$ 350</span>
+          <span className="border border-brand-gold/20 px-3 py-2">{formatCurrency(Math.min(...prices))}</span>
+          <span className="border border-brand-gold/20 px-3 py-2">{formatCurrency(Math.max(...prices))}</span>
         </div>
       </div>
       <div className="mt-5 border-t border-brand-gold/15 pt-5">
         <p className="text-xs uppercase tracking-[0.22em] text-brand-gold">Volume</p>
         <div className="mt-3 flex flex-wrap gap-2">
-          {['500ml', '700ml', '750ml'].map((item) => <span key={item} className="border border-brand-gold/20 px-3 py-2 text-xs text-brand-beige/70">{item}</span>)}
+          {volumes.map((item) => <span key={item} className="border border-brand-gold/20 px-3 py-2 text-xs text-brand-beige/70">{item}</span>)}
         </div>
       </div>
     </aside>
@@ -841,7 +857,7 @@ export function ContactCards() {
   const items: Array<[typeof Phone, string, string]> = [
     [Phone, "WhatsApp", brand.phone],
     [Mail, "E-mail", brand.email],
-    [Shield, "Atendimento", "Segunda a sexta, 9h às 18h"],
+    [MapPin, "Localização", `${brand.address} · Entregamos para todo o Brasil`],
   ];
 
   return (
@@ -866,4 +882,4 @@ function Flourish({ className }: { className?: string }) {
   );
 }
 
-export { brand, categories, products, formatCurrency, getProduct };
+export { ALL_CATEGORIES, brand, categories, products, formatCurrency, getProduct };

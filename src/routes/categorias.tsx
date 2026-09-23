@@ -8,7 +8,7 @@ export const Route = createFileRoute("/categorias")({
       { title: "Categorias – Dom Aldino" },
       {
         name: "description",
-        content: "Explore cachaças Dom Aldino por Amburana, Carvalho Europeu, Jequitibá, Bálsamo, Prata, Ouro, Licores e Kits.",
+        content: "Explore cachaças Dom Aldino por categoria: Envelhecidas, Blend, Presente e Prata.",
       },
       { property: "og:title", content: "Categorias – Dom Aldino" },
       {
@@ -28,8 +28,8 @@ function CategoriesPage() {
       <section className="mx-auto max-w-7xl px-4 pb-20 sm:px-6">
         <SectionTitle
           eyebrow="Categorias"
-          title="Escolha pelo caráter da madeira"
-          text="Da pureza cristalina ao envelhecimento dourado, cada categoria revela uma forma de apreciar a tradição Dom Aldino."
+          title="Nossa coleção"
+          text="Envelhecidas em madeiras nobres, blends autorais, a pureza da prata e opções especiais para presentear."
         />
         <CategoryGrid />
       </section>
