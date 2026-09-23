@@ -2,7 +2,6 @@ import cellarHero from "@/assets/dom-aldino-cellar-hero.jpg";
 import amberBottle from "@/assets/dom-aldino-amber-bottle.jpg";
 import alambique from "@/assets/dom-aldino-alambique.jpg";
 import giftKit from "@/assets/dom-aldino-gift-kit.jpg";
-import logoAsset from "@/assets/dom-aldino-logo.png.asset.json";
 
 export type Product = {
   slug: string;
@@ -39,7 +38,7 @@ export const brand = {
   email: "contato@domaldino.com.br",
   address: "Estrada do Alambique, 1888 — Minas Gerais, Brasil",
   instagram: "@domaldino",
-  logoUrl: logoAsset.url,
+  logoUrl: "/__l5e/assets-v1/a1f6eedb-3c89-4754-baad-329d41029ba2/dom-aldino-logo.png",
 };
 
 export const heroSlides = [

@@ -23,7 +23,6 @@ import {
   Truck,
   UserRound,
   Wine,
-  X,
 } from "lucide-react";
 import {
   createContext,
@@ -413,9 +412,7 @@ export function HeroSlider() {
             {activeSlide.title}
           </h1>
           <p className="mt-6 max-w-2xl text-base leading-8 text-brand-beige/82 sm:text-lg">{activeSlide.subtitle}</p>
-          <Button asChild className="mt-8 rounded bg-primary px-7 py-6 text-xs font-bold uppercase tracking-[0.22em] text-primary-foreground hover:bg-brand-beige hover:text-brand-black">
-            <Link to={activeSlide.href}>{activeSlide.cta}</Link>
-          </Button>
+          <HeroCta active={active} />
         </div>
       </div>
       <div className="absolute bottom-8 left-1/2 z-10 flex -translate-x-1/2 items-center gap-4">
@@ -438,6 +435,29 @@ export function HeroSlider() {
         </Button>
       </div>
     </section>
+  );
+}
+
+function HeroCta({ active }: { active: number }) {
+  const className = "mt-8 rounded bg-primary px-7 py-6 text-xs font-bold uppercase tracking-[0.22em] text-primary-foreground hover:bg-brand-beige hover:text-brand-black";
+  if (active === 1) {
+    return (
+      <Button asChild className={className}>
+        <Link to="/loja" search={{ ordenar: "novidades" }}>Ver lançamentos</Link>
+      </Button>
+    );
+  }
+  if (active === 2) {
+    return (
+      <Button asChild className={className}>
+        <Link to="/loja" search={{ categoria: "Kits e Presentes" }}>Kits para presente</Link>
+      </Button>
+    );
+  }
+  return (
+    <Button asChild className={className}>
+      <Link to="/loja">Conheça nossas cachaças</Link>
+    </Button>
   );
 }
 
@@ -642,7 +662,7 @@ function SiteFooter() {
           <p className="mt-4 max-w-sm text-sm leading-7 text-brand-beige/70">{brand.slogan}</p>
           <p className="mt-5 text-xs uppercase tracking-[0.2em] text-brand-gold">Aprecie com moderação. Venda proibida para menores de 18 anos.</p>
         </div>
-        <FooterGroup title="Institucional" links={["Nossa História", "Loja", "Categorias", "Contato"]} />
+          <FooterGroup />
         <div>
           <h3 className="text-xs font-semibold uppercase tracking-[0.25em] text-brand-gold">Pagamento</h3>
           <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs text-brand-beige/70">
@@ -665,22 +685,15 @@ function SiteFooter() {
   );
 }
 
-function FooterGroup({ title, links }: { title: string; links: string[] }) {
-  const paths: Record<string, string> = {
-    "Nossa História": "/nossa-historia",
-    Loja: "/loja",
-    Categorias: "/categorias",
-    Contato: "/contato",
-  };
+function FooterGroup() {
   return (
     <div>
-      <h3 className="text-xs font-semibold uppercase tracking-[0.25em] text-brand-gold">{title}</h3>
+      <h3 className="text-xs font-semibold uppercase tracking-[0.25em] text-brand-gold">Institucional</h3>
       <div className="mt-4 grid gap-3 text-sm text-brand-beige/70">
-        {links.map((link) => (
-          <Link key={link} to={paths[link] ?? "/"} className="hover:text-brand-gold">
-            {link}
-          </Link>
-        ))}
+        <Link to="/nossa-historia" className="hover:text-brand-gold">Nossa História</Link>
+        <Link to="/loja" className="hover:text-brand-gold">Loja</Link>
+        <Link to="/categorias" className="hover:text-brand-gold">Categorias</Link>
+        <Link to="/contato" className="hover:text-brand-gold">Contato</Link>
       </div>
     </div>
   );
