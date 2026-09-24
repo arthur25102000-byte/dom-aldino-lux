@@ -975,9 +975,9 @@ export function ProductCarousel({ title, kind }: { title: string; kind: "feature
           <Link to="/loja">Ver loja</Link>
         </Button>
       </div>
-      <ul className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-5 overflow-x-auto px-4 pb-4 sm:mx-0 sm:px-0">
+      <ul className="no-scrollbar -mx-4 flex snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto px-4 pb-4 sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-5 sm:overflow-visible sm:px-0 sm:pb-0">
         {list.map((product) => (
-          <li key={product.slug} className="w-[78%] shrink-0 snap-start sm:w-[320px]">
+          <li key={product.slug} className="w-[72%] shrink-0 snap-start sm:w-auto">
             <ProductCard product={product} />
           </li>
         ))}

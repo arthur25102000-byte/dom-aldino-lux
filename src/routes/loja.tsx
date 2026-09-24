@@ -18,6 +18,7 @@ type ShopSearch = {
 
 const SORTS = [
   ["recomendados", "Recomendados"],
+  ["mais-vendidos", "Mais vendidos"],
   ["menor-preco", "Menor preço"],
   ["maior-preco", "Maior preço"],
 ] as const;
@@ -76,6 +77,10 @@ function ShopPage() {
     const filtered = inCategory.filter((product) => !wood || product.wood === wood);
     if (sort === "menor-preco") return [...filtered].sort((a, b) => a.price - b.price);
     if (sort === "maior-preco") return [...filtered].sort((a, b) => b.price - a.price);
+    if (sort === "mais-vendidos")
+      return [...filtered].sort(
+        (a, b) => Number(Boolean(b.featured)) - Number(Boolean(a.featured)),
+      );
     return filtered;
   }, [inCategory, wood, sort]);
 

@@ -167,7 +167,6 @@ export const categories: Category[] = [
 ];
 
 // Vitrine "Mais vendidos" da página inicial: marque até 3 produtos com `featured: true`.
-// Enquanto nenhum estiver marcado, a vitrine e a ordenação "Mais vendidos" ficam escondidas.
 export const FEATURED_LIMIT = 3;
 
 const INGREDIENTS = "Mosto fermentado de caldo de cana-de-açúcar";
@@ -185,6 +184,8 @@ export const products: Product[] = [
   // Envelhecidas
   {
     slug: "carvalho-americano",
+    featured: true,
+    badge: "Mais vendido",
     name: "Carvalho Americano",
     category: "Envelhecidas",
     wood: "Carvalho Americano",
@@ -266,6 +267,8 @@ export const products: Product[] = [
   },
   {
     slug: "amburana-brasileira",
+    featured: true,
+    badge: "Mais vendido",
     name: "Amburana Brasileira",
     category: "Envelhecidas",
     wood: "Amburana",
@@ -476,6 +479,8 @@ export const products: Product[] = [
   // Presente
   {
     slug: "kit-experiencia-dom-aldino",
+    featured: true,
+    badge: "Mais vendido",
     name: "Kit Experiência Dom Aldino",
     category: "Presente",
     wood: "Seleção de 10 sabores",
