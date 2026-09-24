@@ -2,8 +2,6 @@
 @source "../src";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
-
 /*
  * Design system definition.
  *
@@ -19,8 +17,13 @@
  */
 
 @theme inline {
-  --font-display: "Playfair Display", serif;
-  --font-sans: "Montserrat", sans-serif;
+  --font-display: "Playfair Display", Georgia, serif;
+  --font-sans: "Jost", "Segoe UI", system-ui, sans-serif;
+  /* Espaçamento de letras: rótulos em caixa alta e títulos grandes. */
+  --tracking-label: 0.16em;
+  --tracking-caps: 0.26em;
+  --tracking-display: -0.015em;
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -68,6 +71,9 @@
   --color-brand-beige: var(--brand-beige);
   --color-brand-gold-soft: var(--brand-gold-soft);
   --color-brand-smoke: var(--brand-smoke);
+  /* Papéis de texto: corpo (leitura) e sutil (metadados). */
+  --color-body: var(--text-body);
+  --color-subtle: var(--text-subtle);
 }
 
 :root {
@@ -79,6 +85,8 @@
   --brand-beige: oklch(0.8968 0.0395 87.57);
   --brand-gold-soft: oklch(0.86 0.102 91.06);
   --brand-smoke: oklch(0.23 0.014 75);
+  --text-body: oklch(0.8968 0.0395 87.57 / 82%);
+  --text-subtle: oklch(0.8968 0.0395 87.57 / 64%);
   --background: var(--brand-black);
   --foreground: var(--brand-beige);
   --card: var(--brand-wood);
@@ -113,56 +121,28 @@
   --sidebar-ring: var(--brand-gold);
 }
 
-.dark {
-  --background: oklch(0.129 0.042 264.695);
-  --foreground: oklch(0.984 0.003 247.858);
-  --card: oklch(0.208 0.042 265.755);
-  --card-foreground: oklch(0.984 0.003 247.858);
-  --popover: oklch(0.208 0.042 265.755);
-  --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.929 0.013 255.508);
-  --primary-foreground: oklch(0.208 0.042 265.755);
-  --secondary: oklch(0.279 0.041 260.031);
-  --secondary-foreground: oklch(0.984 0.003 247.858);
-  --muted: oklch(0.279 0.041 260.031);
-  --muted-foreground: oklch(0.704 0.04 256.788);
-  --accent: oklch(0.279 0.041 260.031);
-  --accent-foreground: oklch(0.984 0.003 247.858);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.551 0.027 264.364);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.208 0.042 265.755);
-  --sidebar-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.279 0.041 260.031);
-  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.551 0.027 264.364);
-}
-
 @layer base {
   * {
     border-color: var(--color-border);
+  }
+
+  html {
+    color-scheme: dark;
+    scroll-behavior: smooth;
+    scrollbar-color: color-mix(in oklch, var(--brand-gold) 45%, transparent) var(--brand-black);
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
-    letter-spacing: 0;
+    font-size: 1.0625rem;
+    line-height: 1.65;
+    letter-spacing: 0.005em;
     min-width: 320px;
-  }
-
-  html {
-    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
 
   h1,
@@ -171,32 +151,167 @@
   h4,
   .font-display {
     font-family: var(--font-display);
+    letter-spacing: var(--tracking-display);
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  ::selection {
+    background: var(--brand-gold);
+    color: var(--brand-black);
+  }
+
+  input,
+  select,
+  textarea {
+    caret-color: var(--brand-gold);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--brand-gold);
+    outline-offset: 3px;
+  }
+
+  /* Preços e quantidades com algarismos de largura fixa. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
   }
 }
 
 @utility leather-texture {
   background-image:
-    radial-gradient(circle at 20% 10%, color-mix(in oklch, var(--brand-gold) 9%, transparent), transparent 28%),
-    radial-gradient(circle at 70% 35%, color-mix(in oklch, var(--brand-wood) 45%, transparent), transparent 30%),
-    linear-gradient(135deg, color-mix(in oklch, var(--brand-black) 92%, var(--brand-wood)), var(--brand-black));
+    radial-gradient(
+      circle at 20% 10%,
+      color-mix(in oklch, var(--brand-gold) 9%, transparent),
+      transparent 28%
+    ),
+    radial-gradient(
+      circle at 70% 35%,
+      color-mix(in oklch, var(--brand-wood) 45%, transparent),
+      transparent 30%
+    ),
+    linear-gradient(
+      135deg,
+      color-mix(in oklch, var(--brand-black) 92%, var(--brand-wood)),
+      var(--brand-black)
+    );
 }
 
 @utility gold-emboss {
   color: var(--brand-gold);
-  text-shadow: 0 1px 0 color-mix(in oklch, var(--brand-gold-soft) 90%, transparent), 0 6px 24px color-mix(in oklch, var(--brand-gold) 28%, transparent);
+  text-shadow:
+    0 1px 0 color-mix(in oklch, var(--brand-gold-soft) 60%, transparent),
+    0 8px 28px color-mix(in oklch, var(--brand-black) 70%, transparent);
 }
 
-@utility fade-up {
-  animation: fade-up 0.8s ease both;
+/* Resposta imediata ao toque: o botão cede um pouco enquanto está pressionado. */
+@utility press {
+  transition-property: color, background-color, border-color, box-shadow, transform;
+  transition-duration: 160ms;
+  transition-timing-function: var(--ease-out-expo);
+  &:active {
+    transform: scale(0.97);
+    transition-duration: 60ms;
+  }
 }
 
-@keyframes fade-up {
+/* Entrada ao aparecer na tela. O conteúdo já é visível sem JavaScript; a classe só é aplicada pelo observador. */
+@utility reveal {
+  transition:
+    opacity 900ms var(--ease-out-expo),
+    transform 900ms var(--ease-out-expo);
+  &[data-reveal="hidden"] {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+}
+
+@utility hero-in {
+  animation: hero-in 1100ms var(--ease-out-expo) both;
+}
+
+@keyframes hero-in {
   from {
     opacity: 0;
-    transform: translateY(18px);
+    transform: translateY(16px);
+    filter: blur(6px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: none;
+    filter: none;
+  }
+}
+
+@keyframes cart-bump {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.35);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@utility cart-bump {
+  animation: cart-bump 420ms var(--ease-out-expo);
+}
+
+@keyframes hero-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  /* Troca movimento por um esmaecer curto, sem deslocamento nem zoom. */
+  .reveal[data-reveal="hidden"] {
+    transform: none;
+  }
+  .hero-in {
+    animation: fade-in-soft 300ms ease both;
+  }
+  .press:active {
+    transform: none;
+  }
+  .cart-bump {
+    animation: none;
+  }
+  .motion-zoom {
+    transform: none !important;
+  }
+}
+
+@keyframes fade-in-soft {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .glass {
+    backdrop-filter: none;
+    background-color: var(--brand-black);
   }
 }

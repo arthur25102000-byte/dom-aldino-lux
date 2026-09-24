@@ -1,35 +1,31 @@
-import { Link } from "@tanstack/react-router";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
+import { Link, useRouterState } from "@tanstack/react-router";
 import {
-  Award,
   Barrel,
-  CheckCircle2,
   ChevronLeft,
   ChevronRight,
-  Crown,
   Facebook,
-  Filter,
-  Gift,
   Instagram,
   Mail,
-  MapPin,
   Menu,
+  MessageCircle,
   Minus,
-  PackageCheck,
-  Phone,
+  Pause,
+  Play,
   Plus,
   Search,
-  ShieldCheck,
   ShoppingBag,
   Trash2,
   Truck,
-  UserRound,
   Wine,
 } from "lucide-react";
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -45,8 +41,57 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ALL_CATEGORIES, FEATURED_LIMIT, brand, categories, formatCurrency, getProduct, heroSlides, products, story, type CartItem, type Product, whatsappCheckoutUrl } from "@/lib/dom-aldino-data";
+import {
+  ALL_CATEGORIES,
+  FEATURED_LIMIT,
+  brand,
+  categories,
+  formatCurrency,
+  getProduct,
+  heroSlides,
+  products,
+  searchProducts,
+  story,
+  type CartItem,
+  type CartLine,
+  type Picture,
+  type Product,
+  whatsappCheckoutUrl,
+} from "@/lib/dom-aldino-data";
 import { cn } from "@/lib/utils";
+
+const CART_KEY = "dom-aldino-cart";
+const AGE_KEY = "dom-aldino-age-ok";
+
+function readStorage(key: string) {
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writeStorage(key: string, value: string) {
+  try {
+    window.localStorage.setItem(key, value);
+  } catch {
+    // Navegação privada ou armazenamento bloqueado: o carrinho vale só para esta visita.
+  }
+}
+
+function usePrefersReducedMotion() {
+  const [reduced, setReduced] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReduced(query.matches);
+    const onChange = () => setReduced(query.matches);
+    query.addEventListener("change", onChange);
+    return () => query.removeEventListener("change", onChange);
+  }, []);
+  return reduced;
+}
+
+type Toast = { id: number; name: string; quantity: number };
 
 const CartContext = createContext<{
   items: CartItem[];
@@ -56,64 +101,95 @@ const CartContext = createContext<{
   removeItem: (slug: string) => void;
   updateQuantity: (slug: string, quantity: number) => void;
   clear: () => void;
+  openCart: () => void;
 } | null>(null);
 
 export function DomAldinoShell({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>([]);
+  const [lines, setLines] = useState<CartLine[]>([]);
+  const [loaded, setLoaded] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
+  const [toast, setToast] = useState<Toast | null>(null);
 
   useEffect(() => {
     try {
-      const saved = window.localStorage.getItem("dom-aldino-cart");
-      if (saved) setItems(JSON.parse(saved) as CartItem[]);
+      const saved = JSON.parse(readStorage(CART_KEY) ?? "[]") as CartLine[];
+      // Aceita também o formato antigo (produto inteiro); descarta produtos que saíram do catálogo.
+      setLines(
+        saved
+          .filter((line) => getProduct(line.slug) && line.quantity > 0)
+          .map((line) => ({ slug: line.slug, quantity: line.quantity })),
+      );
     } catch {
-      setItems([]);
+      setLines([]);
     }
+    setLoaded(true);
   }, []);
 
   useEffect(() => {
-    window.localStorage.setItem("dom-aldino-cart", JSON.stringify(items));
-  }, [items]);
+    if (loaded) writeStorage(CART_KEY, JSON.stringify(lines));
+  }, [lines, loaded]);
+
+  useEffect(() => {
+    if (!toast) return;
+    const id = window.setTimeout(() => setToast(null), 4000);
+    return () => window.clearTimeout(id);
+  }, [toast]);
 
   const value = useMemo(() => {
-    const count = items.reduce((sum, item) => sum + item.quantity, 0);
-    const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const items = lines.flatMap((line) => {
+      const product = getProduct(line.slug);
+      return product ? [{ ...product, quantity: line.quantity }] : [];
+    });
     return {
       items,
-      count,
-      subtotal,
+      count: items.reduce((sum, item) => sum + item.quantity, 0),
+      subtotal: items.reduce((sum, item) => sum + item.price * item.quantity, 0),
       addItem: (product: Product, quantity = 1) => {
-        setItems((current) => {
-          const existing = current.find((item) => item.slug === product.slug);
-          if (existing) {
-            return current.map((item) =>
-              item.slug === product.slug ? { ...item, quantity: item.quantity + quantity } : item,
-            );
-          }
-          return [...current, { ...product, quantity }];
-        });
-        setCartOpen(true);
-      },
-      removeItem: (slug: string) => setItems((current) => current.filter((item) => item.slug !== slug)),
-      updateQuantity: (slug: string, quantity: number) => {
-        setItems((current) =>
-          current
-            .map((item) => (item.slug === slug ? { ...item, quantity: Math.max(1, quantity) } : item))
-            .filter((item) => item.quantity > 0),
+        setLines((current) =>
+          current.some((line) => line.slug === product.slug)
+            ? current.map((line) =>
+                line.slug === product.slug ? { ...line, quantity: line.quantity + quantity } : line,
+              )
+            : [...current, { slug: product.slug, quantity }],
         );
+        setToast({ id: Date.now(), name: product.name, quantity });
       },
-      clear: () => setItems([]),
+      removeItem: (slug: string) =>
+        setLines((current) => current.filter((line) => line.slug !== slug)),
+      updateQuantity: (slug: string, quantity: number) =>
+        setLines((current) =>
+          current.map((line) =>
+            line.slug === slug ? { ...line, quantity: Math.max(1, quantity) } : line,
+          ),
+        ),
+      clear: () => setLines([]),
+      openCart: () => setCartOpen(true),
     };
-  }, [items]);
+  }, [lines]);
 
   return (
     <CartContext.Provider value={value}>
-      <div className="min-h-screen overflow-x-hidden bg-background text-foreground leather-texture">
+      <div className="min-h-screen overflow-x-clip bg-background text-foreground leather-texture">
+        <a
+          href="#conteudo"
+          className="sr-only z-[90] bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
+        >
+          Pular para o conteúdo
+        </a>
         <AgeGate />
         <SiteHeader onOpenCart={() => setCartOpen(true)} />
-        <main>{children}</main>
+        <main id="conteudo" tabIndex={-1} className="outline-none">
+          {children}
+        </main>
         <SiteFooter />
         <CartDrawer open={cartOpen} onOpenChange={setCartOpen} />
+        <CartToast
+          toast={toast}
+          onOpenCart={() => {
+            setToast(null);
+            setCartOpen(true);
+          }}
+        />
         <FloatingWhatsApp />
       </div>
     </CartContext.Provider>
@@ -126,15 +202,49 @@ export function useCart() {
   return context;
 }
 
-export function LogoMark({ compact = false }: { compact?: boolean }) {
+/** Imagem responsiva: o navegador escolhe entre a versão pequena e a grande conforme a largura exibida. */
+export function Photo({
+  picture,
+  alt,
+  sizes,
+  className,
+  priority = false,
+}: {
+  picture: Picture;
+  alt: string;
+  sizes: string;
+  className?: string;
+  priority?: boolean;
+}) {
   return (
-    <Link to="/" className="flex items-center gap-3" aria-label="Dom Aldino - início">
+    <img
+      src={picture.src}
+      srcSet={picture.srcSet}
+      sizes={sizes}
+      alt={alt}
+      width={picture.width}
+      height={picture.height}
+      loading={priority ? "eager" : "lazy"}
+      decoding="async"
+      fetchPriority={priority ? "high" : undefined}
+      className={className}
+    />
+  );
+}
+
+export function LogoMark({ className }: { className?: string }) {
+  return (
+    <Link
+      to="/"
+      className="inline-flex items-center rounded"
+      aria-label="Dom Aldino, página inicial"
+    >
       <img
         src={brand.logoUrl}
-        alt="Logo Dom Aldino"
-        className={cn("h-14 w-auto object-contain drop-shadow-lg", compact ? "h-11" : "sm:h-16")}
-        width={240}
-        height={112}
+        alt=""
+        className={cn("h-12 w-auto object-contain sm:h-14", className)}
+        width={350}
+        height={283}
       />
     </Link>
   );
@@ -144,114 +254,144 @@ function AgeGate() {
   const [status, setStatus] = useState<"checking" | "accepted" | "blocked" | "pending">("checking");
 
   useEffect(() => {
-    const saved = window.localStorage.getItem("dom-aldino-age-ok");
-    setStatus(saved === "yes" ? "accepted" : "pending");
+    setStatus(readStorage(AGE_KEY) === "yes" ? "accepted" : "pending");
   }, []);
 
   if (status === "checking" || status === "accepted") return null;
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-brand-black/95 px-4 backdrop-blur-sm">
-      <div className="w-full max-w-md border border-brand-gold/40 bg-brand-black p-8 text-center shadow-2xl shadow-brand-gold/10">
-        <Crown className="mx-auto mb-4 h-10 w-10 text-brand-gold" aria-hidden="true" />
-        <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center border border-brand-gold text-brand-gold">
-          <span className="font-display text-3xl">DA</span>
-        </div>
-        {status === "blocked" ? (
-          <>
-            <h2 className="font-display text-3xl gold-emboss">Acesso bloqueado</h2>
-            <p className="mt-4 text-sm leading-6 text-brand-beige/80">
-              A venda de bebidas alcoólicas é proibida para menores de 18 anos.
-            </p>
-          </>
-        ) : (
-          <>
-            <p className="text-xs uppercase tracking-[0.35em] text-brand-gold">Cachaça Premium Artesanal</p>
-            <h2 className="mt-3 font-display text-3xl gold-emboss">Você tem 18 anos ou mais?</h2>
-            <p className="mt-4 text-sm leading-6 text-brand-beige/80">
-              Confirme sua idade para acessar a loja Dom Aldino.
-            </p>
-            <div className="mt-7 grid grid-cols-2 gap-3">
-              <Button
-                type="button"
-                className="rounded bg-primary text-primary-foreground hover:bg-brand-olive hover:text-brand-beige"
-                onClick={() => {
-                  window.localStorage.setItem("dom-aldino-age-ok", "yes");
-                  setStatus("accepted");
-                }}
-              >
-                Sim, tenho
-              </Button>
+    <DialogPrimitive.Root open modal>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Overlay className="glass fixed inset-0 z-[80] bg-brand-black/90 backdrop-blur-md" />
+        <DialogPrimitive.Content
+          className="fixed left-1/2 top-1/2 z-[81] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 border border-brand-gold/40 bg-brand-black px-6 py-10 text-center shadow-[0_24px_80px_-24px_rgb(0_0_0/0.9)] outline-none sm:px-10"
+          onEscapeKeyDown={(event) => event.preventDefault()}
+          onPointerDownOutside={(event) => event.preventDefault()}
+          onInteractOutside={(event) => event.preventDefault()}
+        >
+          <img
+            src={brand.logoUrl}
+            alt="Dom Aldino"
+            className="mx-auto h-24 w-auto"
+            width={350}
+            height={283}
+          />
+          {status === "blocked" ? (
+            <>
+              <DialogPrimitive.Title className="mt-6 font-display text-3xl gold-emboss">
+                Volte quando fizer 18 anos
+              </DialogPrimitive.Title>
+              <DialogPrimitive.Description className="mt-4 text-body">
+                A venda de bebidas alcoólicas é proibida para menores de 18 anos.
+              </DialogPrimitive.Description>
               <Button
                 type="button"
                 variant="outline"
-                className="rounded border-brand-gold/50 bg-transparent text-brand-beige hover:bg-brand-wood hover:text-brand-beige"
-                onClick={() => setStatus("blocked")}
+                className="mt-7"
+                onClick={() => setStatus("pending")}
               >
-                Não
+                Voltar
               </Button>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
+            </>
+          ) : (
+            <>
+              <DialogPrimitive.Title className="mt-6 font-display text-3xl gold-emboss">
+                Você tem 18 anos ou mais?
+              </DialogPrimitive.Title>
+              <DialogPrimitive.Description className="mt-4 text-body">
+                Confirme sua idade para entrar na loja Dom Aldino.
+              </DialogPrimitive.Description>
+              <div className="mt-8 grid grid-cols-2 gap-3">
+                <Button
+                  type="button"
+                  autoFocus
+                  onClick={() => {
+                    writeStorage(AGE_KEY, "yes");
+                    setStatus("accepted");
+                  }}
+                >
+                  Sim, tenho
+                </Button>
+                <Button type="button" variant="outline" onClick={() => setStatus("blocked")}>
+                  Não tenho
+                </Button>
+              </div>
+            </>
+          )}
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 }
 
+const NAV_LINKS = [
+  ["Início", "/"],
+  ["Loja", "/loja"],
+  ["Categorias", "/categorias"],
+  ["Nossa História", "/nossa-historia"],
+  ["Contato", "/contato"],
+] as const;
+
 function SiteHeader({ onOpenCart }: { onOpenCart: () => void }) {
   const { count } = useCart();
-  const links = [
-    ["Início", "/"],
-    ["Loja", "/loja"],
-    ["Categorias", "/categorias"],
-    ["Nossa História", "/nossa-historia"],
-    ["Contato", "/contato"],
-  ] as const;
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 border-b border-brand-gold/20 bg-brand-black/90 backdrop-blur-md">
-      <div className="bg-brand-wood text-brand-beige">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-2 text-[0.68rem] uppercase tracking-[0.22em] sm:px-6">
-          <span>Frete para todo o Brasil</span>
-          <a className="hidden items-center gap-2 sm:flex" href={`https://wa.me/${brand.whatsapp}`} target="_blank" rel="noreferrer">
-            <Phone className="h-3.5 w-3.5 text-brand-gold" aria-hidden="true" />
+    <header className="glass fixed inset-x-0 top-0 z-50 border-b border-brand-gold/15 bg-brand-black/85 backdrop-blur-md">
+      <div className="bg-brand-wood">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-1.5 text-[0.7rem] uppercase tracking-caps text-brand-beige sm:px-6">
+          <span className="flex items-center gap-2">
+            <Truck className="h-3.5 w-3.5 text-brand-gold" aria-hidden="true" /> Enviamos para todo
+            o Brasil
+          </span>
+          <a
+            className="hidden items-center gap-2 hover:text-brand-gold sm:flex"
+            href={`https://wa.me/${brand.whatsapp}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <MessageCircle className="h-3.5 w-3.5 text-brand-gold" aria-hidden="true" />
             {brand.phone}
           </a>
         </div>
       </div>
-      <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6">
-        <LogoMark compact />
-        <nav className="hidden items-center gap-8 lg:flex">
-          {links.map(([label, to]) => (
+      <div className="mx-auto flex h-18 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
+        <LogoMark />
+        <nav aria-label="Principal" className="hidden items-center gap-1 lg:flex">
+          {NAV_LINKS.map(([label, to]) => (
             <Link
               key={to}
               to={to}
-              className="text-xs font-semibold uppercase tracking-[0.26em] text-brand-beige/80 transition-colors hover:text-brand-gold"
-              activeProps={{ className: "text-brand-gold" }}
+              className="relative flex min-h-11 items-center px-3 text-xs font-medium uppercase tracking-caps text-brand-beige/85 transition-colors hover:text-brand-gold data-[status=active]:text-brand-gold after:absolute after:inset-x-3 after:bottom-1.5 after:h-px after:origin-left after:scale-x-0 after:bg-brand-gold after:transition-transform after:duration-300 data-[status=active]:after:scale-x-100"
+              activeOptions={{ exact: to === "/" }}
             >
               {label}
             </Link>
           ))}
         </nav>
-        <div className="flex items-center gap-2 text-brand-gold">
-          <IconButton label="Buscar">
-            <Search className="h-5 w-5" />
-          </IconButton>
-          <IconButton label="Conta" className="hidden sm:inline-flex">
-            <UserRound className="h-5 w-5" />
-          </IconButton>
+        <div className="flex items-center gap-1">
+          <SearchPanel />
           <Button
             type="button"
             variant="ghost"
             size="icon"
-            className="relative rounded text-brand-gold hover:bg-brand-wood hover:text-brand-gold"
-            aria-label="Abrir carrinho"
+            className="relative"
+            aria-label={
+              count > 0
+                ? `Abrir carrinho, ${count} ${count === 1 ? "item" : "itens"}`
+                : "Abrir carrinho, vazio"
+            }
             onClick={onOpenCart}
           >
-            <ShoppingBag className="h-5 w-5" />
-            <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[0.65rem] font-bold text-primary-foreground">
-              {count}
-            </span>
+            <ShoppingBag className="!size-5" aria-hidden="true" />
+            {count > 0 ? (
+              <span
+                key={count}
+                className="cart-bump tabular absolute right-0.5 top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[0.68rem] font-semibold text-primary-foreground"
+                aria-hidden="true"
+              >
+                {count}
+              </span>
+            ) : null}
           </Button>
           <Sheet>
             <SheetTrigger asChild>
@@ -259,29 +399,42 @@ function SiteHeader({ onOpenCart }: { onOpenCart: () => void }) {
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="rounded text-brand-gold hover:bg-brand-wood hover:text-brand-gold lg:hidden"
+                className="lg:hidden"
                 aria-label="Abrir menu"
               >
-                <Menu className="h-6 w-6" />
+                <Menu className="!size-6" aria-hidden="true" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="border-brand-gold/30 bg-brand-black text-brand-beige">
-              <SheetHeader>
-                <SheetTitle className="text-brand-gold">Dom Aldino</SheetTitle>
-                <SheetDescription className="text-brand-beige/70">Cachaça Premium Artesanal</SheetDescription>
+            <SheetContent
+              side="right"
+              className="w-[85%] border-brand-gold/25 bg-brand-black text-brand-beige sm:max-w-sm"
+            >
+              <SheetHeader className="text-left">
+                <SheetTitle className="font-display text-2xl text-brand-gold">Menu</SheetTitle>
+                <SheetDescription className="sr-only">Páginas da loja Dom Aldino</SheetDescription>
               </SheetHeader>
-              <div className="mt-8 grid gap-2">
-                {links.map(([label, to]) => (
+              <nav aria-label="Principal" className="mt-6 grid">
+                {NAV_LINKS.map(([label, to]) => (
                   <SheetClose asChild key={to}>
                     <Link
                       to={to}
-                      className="border-b border-brand-gold/15 py-4 text-sm font-semibold uppercase tracking-[0.22em] text-brand-beige"
+                      activeOptions={{ exact: to === "/" }}
+                      className="border-b border-brand-gold/15 py-4 font-display text-xl text-brand-beige transition-colors hover:text-brand-gold data-[status=active]:text-brand-gold"
                     >
                       {label}
                     </Link>
                   </SheetClose>
                 ))}
-              </div>
+              </nav>
+              <a
+                href={`https://wa.me/${brand.whatsapp}`}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-8 flex items-center gap-3 py-2 text-sm text-body hover:text-brand-gold"
+              >
+                <MessageCircle className="h-5 w-5 text-brand-gold" aria-hidden="true" />{" "}
+                {brand.phone}
+              </a>
             </SheetContent>
           </Sheet>
         </div>
@@ -290,81 +443,108 @@ function SiteHeader({ onOpenCart }: { onOpenCart: () => void }) {
   );
 }
 
-function IconButton({ label, className, children }: { label: string; className?: string; children: ReactNode }) {
+function SearchPanel() {
+  const [query, setQuery] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+  const results = useMemo(() => searchProducts(query).slice(0, 8), [query]);
+  const suggestions = ["Carvalho", "Amburana", "Blend", "Kit"];
+
   return (
-    <Button
-      type="button"
-      variant="ghost"
-      size="icon"
-      className={cn("rounded text-brand-gold hover:bg-brand-wood hover:text-brand-gold", className)}
-      aria-label={label}
-      title={label}
+    <Sheet
+      onOpenChange={(open) => {
+        if (!open) setQuery("");
+      }}
     >
-      {children}
-    </Button>
-  );
-}
-
-function CartDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
-  const { items, subtotal, updateQuantity, removeItem } = useCart();
-  const checkoutUrl = whatsappCheckoutUrl(items);
-
-  return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full border-brand-gold/30 bg-brand-black text-brand-beige sm:max-w-md">
-        <SheetHeader>
-          <SheetTitle className="font-display text-2xl text-brand-gold">Carrinho</SheetTitle>
-          <SheetDescription className="text-brand-beige/70">Finalize seu pedido pelo WhatsApp.</SheetDescription>
-        </SheetHeader>
-        <div className="mt-8 flex h-[calc(100vh-12rem)] flex-col">
-          {items.length === 0 ? (
-            <div className="flex flex-1 flex-col items-center justify-center text-center text-brand-beige/70">
-              <ShoppingBag className="mb-4 h-12 w-12 text-brand-gold" />
-              <p>Seu carrinho está vazio.</p>
+      <SheetTrigger asChild>
+        <Button type="button" variant="ghost" size="icon" aria-label="Buscar cachaças">
+          <Search className="!size-5" aria-hidden="true" />
+        </Button>
+      </SheetTrigger>
+      <SheetContent
+        side="top"
+        onOpenAutoFocus={(event) => {
+          event.preventDefault();
+          inputRef.current?.focus();
+        }}
+        className="max-h-[85dvh] overflow-y-auto border-brand-gold/25 bg-brand-black px-4 pb-8 pt-6 text-brand-beige sm:px-6"
+      >
+        <div className="mx-auto max-w-3xl">
+          <SheetHeader className="text-left">
+            <SheetTitle className="font-display text-2xl text-brand-gold">Buscar</SheetTitle>
+            <SheetDescription className="sr-only">
+              Digite o nome, a madeira ou a categoria da cachaça.
+            </SheetDescription>
+          </SheetHeader>
+          <label htmlFor="busca" className="sr-only">
+            Nome, madeira ou categoria
+          </label>
+          <div className="relative mt-5">
+            <Search
+              className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-brand-gold"
+              aria-hidden="true"
+            />
+            <input
+              id="busca"
+              ref={inputRef}
+              type="search"
+              autoComplete="off"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Ex.: carvalho francês, amburana, kit"
+              className="min-h-13 w-full rounded border border-brand-gold/35 bg-brand-smoke pl-12 pr-4 text-base text-brand-beige placeholder:text-subtle focus-visible:border-brand-gold"
+            />
+          </div>
+          {query.trim() === "" ? (
+            <div className="mt-5 flex flex-wrap items-center gap-2 text-sm text-subtle">
+              <span>Sugestões:</span>
+              {suggestions.map((term) => (
+                <button
+                  key={term}
+                  type="button"
+                  className="press min-h-11 rounded border border-brand-gold/25 px-4 text-brand-beige hover:border-brand-gold hover:text-brand-gold"
+                  onClick={() => setQuery(term)}
+                >
+                  {term}
+                </button>
+              ))}
             </div>
           ) : (
-            <>
-              <div className="flex-1 space-y-4 overflow-auto pr-2">
-                {items.map((item) => (
-                  <div key={item.slug} className="grid grid-cols-[72px_1fr] gap-4 border-b border-brand-gold/15 pb-4">
-                    <img src={item.image} alt={item.name} className="h-20 w-18 object-cover" loading="lazy" width={72} height={80} />
-                    <div>
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="font-display text-lg text-brand-gold">{item.name}</p>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 rounded text-brand-beige/70 hover:bg-brand-wood hover:text-brand-gold"
-                          onClick={() => removeItem(item.slug)}
-                          aria-label={`Remover ${item.name}`}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <p className="mt-1 text-xs uppercase tracking-[0.18em] text-brand-beige/55">{item.volume} · {item.alcohol}</p>
-                      <div className="mt-3 flex items-center justify-between">
-                        <QuantityControl quantity={item.quantity} setQuantity={(qty) => updateQuantity(item.slug, qty)} />
-                        <span className="font-semibold text-brand-gold">{formatCurrency(item.price * item.quantity)}</span>
-                      </div>
-                    </div>
-                  </div>
+            <div className="mt-5" aria-live="polite">
+              <p className="text-sm text-subtle">
+                {results.length === 0
+                  ? `Nenhuma cachaça encontrada para “${query.trim()}”.`
+                  : `${results.length} ${results.length === 1 ? "resultado" : "resultados"}`}
+              </p>
+              <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+                {results.map((product) => (
+                  <li key={product.slug}>
+                    <SheetClose asChild>
+                      <Link
+                        to="/produto/$slug"
+                        params={{ slug: product.slug }}
+                        className="flex items-center gap-4 rounded border border-transparent p-2 transition-colors hover:border-brand-gold/30 hover:bg-brand-wood/60"
+                      >
+                        <Photo
+                          picture={product.image}
+                          alt=""
+                          sizes="56px"
+                          className="h-18 w-14 shrink-0 object-cover"
+                        />
+                        <span className="min-w-0">
+                          <span className="block font-display text-lg leading-tight text-brand-gold">
+                            {product.name}
+                          </span>
+                          <span className="block text-sm text-subtle">
+                            {product.category} ·{" "}
+                            <span className="tabular">{formatCurrency(product.price)}</span>
+                          </span>
+                        </span>
+                      </Link>
+                    </SheetClose>
+                  </li>
                 ))}
-              </div>
-              <div className="mt-5 border-t border-brand-gold/25 pt-5">
-                <p className="flex items-center gap-2 text-xs uppercase tracking-[0.22em] text-brand-gold">
-                  <Truck className="h-4 w-4" aria-hidden="true" /> {brand.shipping}
-                </p>
-                <p className="mt-2 text-sm text-brand-beige/65">Enviamos para todo o Brasil. O valor do frete é combinado pelo WhatsApp.</p>
-                <div className="mt-5 flex items-center justify-between text-lg">
-                  <span>Subtotal</span>
-                  <strong className="text-brand-gold">{formatCurrency(subtotal)}</strong>
-                </div>
-                <Button asChild className="mt-5 w-full rounded bg-primary text-primary-foreground hover:bg-brand-olive hover:text-brand-beige">
-                  <a href={checkoutUrl} target="_blank" rel="noreferrer">Finalizar pelo WhatsApp</a>
-                </Button>
-              </div>
-            </>
+              </ul>
+            </div>
           )}
         </div>
       </SheetContent>
@@ -372,199 +552,491 @@ function CartDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (open
   );
 }
 
-export function HeroSlider() {
-  const [active, setActive] = useState(0);
-  const activeSlide = heroSlides[active] ?? heroSlides[0];
-
-  useEffect(() => {
-    const id = window.setInterval(() => setActive((current) => (current + 1) % heroSlides.length), 5000);
-    return () => window.clearInterval(id);
-  }, []);
-
-  if (!activeSlide) return null;
+function CartDrawer({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const { items, subtotal, updateQuantity, removeItem } = useCart();
 
   return (
-    <section className="relative min-h-[92vh] overflow-hidden pt-28">
-      {heroSlides.map((slide, index) => (
-        <img
-          key={slide.title}
-          src={slide.image}
-          alt={slide.title}
-          className={cn(
-            "absolute inset-0 h-full w-full object-cover transition-opacity duration-1000",
-            index === active ? "opacity-100" : "opacity-0",
-          )}
-          width={1920}
-          height={1080}
-          loading={index === 0 ? "eager" : "lazy"}
-        />
-      ))}
-      <div className="absolute inset-0 bg-gradient-to-r from-brand-black via-brand-black/78 to-brand-black/35" />
-      <div className="absolute inset-0 bg-gradient-to-t from-brand-black via-transparent to-brand-black/30" />
-      <div className="relative z-10 mx-auto flex min-h-[calc(92vh-7rem)] max-w-7xl items-center px-4 py-16 sm:px-6">
-        <div className="max-w-3xl fade-up">
-          <p className="mb-5 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.35em] text-brand-gold">
-            <Crown className="h-5 w-5" /> Cachaça Premium Artesanal
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent
+        side="right"
+        className="flex w-full flex-col border-brand-gold/25 bg-brand-black p-0 text-brand-beige sm:max-w-md"
+      >
+        <SheetHeader className="border-b border-brand-gold/15 px-6 pb-5 pt-6 text-left">
+          <SheetTitle className="font-display text-2xl text-brand-gold">Carrinho</SheetTitle>
+          <SheetDescription className="text-sm text-subtle">
+            O pedido é finalizado pelo WhatsApp.
+          </SheetDescription>
+        </SheetHeader>
+        {items.length === 0 ? (
+          <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
+            <ShoppingBag className="h-10 w-10 text-brand-gold/70" aria-hidden="true" />
+            <p className="mt-4 font-display text-xl text-brand-beige">Seu carrinho está vazio</p>
+            <p className="mt-2 text-sm text-subtle">
+              Escolha uma cachaça na loja e ela aparece aqui.
+            </p>
+            <SheetClose asChild>
+              <Button asChild className="mt-6">
+                <Link to="/loja">Ver a loja</Link>
+              </Button>
+            </SheetClose>
+          </div>
+        ) : (
+          <>
+            <ul className="flex-1 space-y-5 overflow-y-auto px-6 py-5">
+              {items.map((item) => (
+                <li
+                  key={item.slug}
+                  className="grid grid-cols-[64px_1fr] gap-4 border-b border-brand-gold/10 pb-5"
+                >
+                  <Photo
+                    picture={item.image}
+                    alt=""
+                    sizes="64px"
+                    className="h-[85px] w-16 object-cover"
+                  />
+                  <div className="min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="font-display text-lg leading-snug text-brand-gold">
+                        {item.name}
+                      </p>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="-mr-2 -mt-2 shrink-0 text-subtle hover:text-brand-gold"
+                        onClick={() => removeItem(item.slug)}
+                        aria-label={`Remover ${item.name} do carrinho`}
+                      >
+                        <Trash2 aria-hidden="true" />
+                      </Button>
+                    </div>
+                    <p className="text-sm text-subtle">
+                      {item.volume} · {item.alcohol}
+                    </p>
+                    <div className="mt-3 flex items-center justify-between gap-3">
+                      <QuantityControl
+                        label={item.name}
+                        quantity={item.quantity}
+                        setQuantity={(quantity) => updateQuantity(item.slug, quantity)}
+                      />
+                      <span className="tabular font-semibold text-brand-gold">
+                        {formatCurrency(item.price * item.quantity)}
+                      </span>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <div className="border-t border-brand-gold/20 px-6 pb-6 pt-5">
+              <div className="flex items-baseline justify-between">
+                <span className="text-body">Subtotal</span>
+                <strong className="tabular font-display text-2xl text-brand-gold">
+                  {formatCurrency(subtotal)}
+                </strong>
+              </div>
+              <p className="mt-2 text-sm text-subtle">
+                {brand.shipping}: o valor do envio é combinado na conversa.
+              </p>
+              <Button asChild size="lg" className="mt-5 w-full">
+                <a href={whatsappCheckoutUrl(items)} target="_blank" rel="noreferrer">
+                  <MessageCircle aria-hidden="true" /> Finalizar pelo WhatsApp
+                </a>
+              </Button>
+            </div>
+          </>
+        )}
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function CartToast({ toast, onOpenCart }: { toast: Toast | null; onOpenCart: () => void }) {
+  return (
+    <div
+      aria-live="polite"
+      className="pointer-events-none fixed inset-x-0 bottom-24 z-[60] flex justify-center px-4 lg:bottom-6"
+    >
+      {toast ? (
+        <div
+          key={toast.id}
+          className="hero-in pointer-events-auto flex w-full max-w-md items-center gap-4 border border-brand-gold/40 bg-brand-smoke py-2 pl-5 pr-2 shadow-[0_18px_50px_-18px_rgb(0_0_0/0.9)]"
+        >
+          <p className="min-w-0 flex-1 text-sm text-brand-beige">
+            <span className="text-brand-gold">{toast.name}</span>
+            {toast.quantity > 1 ? ` (${toast.quantity})` : ""} foi para o carrinho.
           </p>
-          <h1 className="font-display text-5xl leading-tight gold-emboss sm:text-6xl lg:text-7xl">
-            {activeSlide.title}
-          </h1>
-          <p className="mt-6 max-w-2xl text-base leading-8 text-brand-beige/82 sm:text-lg">{activeSlide.subtitle}</p>
-          <HeroCta active={active} />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="min-h-11 shrink-0"
+            onClick={onOpenCart}
+          >
+            Ver carrinho
+          </Button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+const HERO_INTERVAL = 7000;
+
+export function HeroSlider() {
+  const [active, setActive] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const [holding, setHolding] = useState(false);
+  const [showAll, setShowAll] = useState(false);
+  const reducedMotion = usePrefersReducedMotion();
+  const pointerStart = useRef<{ x: number; y: number } | null>(null);
+  const count = heroSlides.length;
+  const playing = !paused && !holding && !reducedMotion && count > 1;
+  const slide = heroSlides[active] ?? heroSlides[0];
+
+  const go = useCallback((index: number) => setActive((index + count) % count), [count]);
+
+  // Carrega as outras fotos só depois da primeira, para não disputar banda com ela.
+  useEffect(() => {
+    const id = window.setTimeout(() => setShowAll(true), 1500);
+    return () => window.clearTimeout(id);
+  }, []);
+
+  // O temporizador reinicia a cada troca, inclusive as feitas pelo visitante.
+  useEffect(() => {
+    if (!playing) return;
+    const id = window.setTimeout(() => go(active + 1), HERO_INTERVAL);
+    return () => window.clearTimeout(id);
+  }, [active, playing, go]);
+
+  if (!slide) return null;
+
+  return (
+    <section
+      aria-roledescription="carrossel"
+      aria-label="Destaques Dom Aldino"
+      className="relative flex min-h-[88svh] touch-pan-y select-none flex-col overflow-hidden pt-[6.5rem]"
+      onMouseEnter={() => setHolding(true)}
+      onMouseLeave={() => setHolding(false)}
+      onFocus={() => setHolding(true)}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setHolding(false);
+      }}
+      onPointerDown={(event) => {
+        if (event.pointerType !== "mouse")
+          pointerStart.current = { x: event.clientX, y: event.clientY };
+      }}
+      onPointerUp={(event) => {
+        const start = pointerStart.current;
+        pointerStart.current = null;
+        if (!start) return;
+        const dx = event.clientX - start.x;
+        if (Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(event.clientY - start.y))
+          go(active + (dx < 0 ? 1 : -1));
+      }}
+      onPointerCancel={() => {
+        pointerStart.current = null;
+      }}
+    >
+      <h1 className="sr-only">Dom Aldino, cachaça premium artesanal</h1>
+      {heroSlides.map((item, index) =>
+        index === 0 || showAll ? (
+          <Photo
+            key={item.title}
+            picture={item.image}
+            alt={index === active ? item.alt : ""}
+            sizes="100vw"
+            priority={index === 0}
+            className={cn(
+              "absolute inset-0 h-full w-full object-cover transition-opacity duration-[1200ms] ease-out",
+              index === active ? "opacity-100" : "opacity-0",
+            )}
+          />
+        ) : null,
+      )}
+      <div
+        className="absolute inset-0 bg-gradient-to-r from-brand-black via-brand-black/75 to-brand-black/20"
+        aria-hidden="true"
+      />
+      <div
+        className="absolute inset-0 bg-gradient-to-t from-brand-black via-transparent to-brand-black/40"
+        aria-hidden="true"
+      />
+
+      <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 items-center px-4 py-16 sm:px-6">
+        <div
+          key={active}
+          role="group"
+          aria-roledescription="slide"
+          aria-label={`${active + 1} de ${count}`}
+          aria-live={playing ? "off" : "polite"}
+          className="hero-in max-w-2xl"
+        >
+          <p className="font-display text-[2.6rem] font-bold leading-[1.05] gold-emboss sm:text-6xl lg:text-7xl">
+            {slide.title}
+          </p>
+          <p className="mt-6 max-w-xl text-lg leading-relaxed text-body">{slide.subtitle}</p>
+          <Button asChild size="lg" className="mt-9">
+            <Link to="/loja" search={slide.search ?? {}}>
+              {slide.cta}
+            </Link>
+          </Button>
         </div>
       </div>
-      <div className="absolute bottom-8 left-1/2 z-10 flex -translate-x-1/2 items-center gap-4">
-        <Button type="button" variant="ghost" size="icon" className="rounded-full border border-brand-gold/40 text-brand-gold hover:bg-brand-wood" onClick={() => setActive((active - 1 + heroSlides.length) % heroSlides.length)} aria-label="Slide anterior">
-          <ChevronLeft className="h-5 w-5" />
-        </Button>
-        <div className="flex gap-2">
-          {heroSlides.map((slide, index) => (
+
+      {count > 1 ? (
+        <div className="relative z-10 mx-auto flex w-full max-w-7xl items-center gap-1 px-4 pb-6 sm:px-6">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={() => go(active - 1)}
+            aria-label="Slide anterior"
+          >
+            <ChevronLeft className="!size-5" aria-hidden="true" />
+          </Button>
+          {heroSlides.map((item, index) => (
             <button
-              key={slide.title}
+              key={item.title}
               type="button"
-              className={cn("h-2.5 w-2.5 rounded-full border border-brand-gold", index === active ? "bg-brand-gold" : "bg-transparent")}
-              aria-label={`Ir para slide ${index + 1}`}
-              onClick={() => setActive(index)}
-            />
+              className="group flex h-11 w-12 cursor-pointer items-center"
+              aria-label={`Ir para o slide ${index + 1}: ${item.title}`}
+              aria-current={index === active ? "true" : undefined}
+              onClick={() => go(index)}
+            >
+              <span className="relative h-0.5 w-full overflow-hidden bg-brand-beige/25 group-hover:bg-brand-beige/45">
+                {index === active ? (
+                  <span
+                    key={`${active}-${playing}`}
+                    className="absolute inset-0 origin-left bg-brand-gold"
+                    style={
+                      playing
+                        ? { animation: `hero-progress ${HERO_INTERVAL}ms linear both` }
+                        : undefined
+                    }
+                  />
+                ) : null}
+              </span>
+            </button>
           ))}
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={() => go(active + 1)}
+            aria-label="Próximo slide"
+          >
+            <ChevronRight className="!size-5" aria-hidden="true" />
+          </Button>
+          {!reducedMotion ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => setPaused((value) => !value)}
+              aria-label={
+                paused
+                  ? "Retomar troca automática dos slides"
+                  : "Pausar troca automática dos slides"
+              }
+            >
+              {paused ? <Play aria-hidden="true" /> : <Pause aria-hidden="true" />}
+            </Button>
+          ) : null}
         </div>
-        <Button type="button" variant="ghost" size="icon" className="rounded-full border border-brand-gold/40 text-brand-gold hover:bg-brand-wood" onClick={() => setActive((active + 1) % heroSlides.length)} aria-label="Próximo slide">
-          <ChevronRight className="h-5 w-5" />
-        </Button>
-      </div>
+      ) : null}
     </section>
   );
 }
 
-function HeroCta({ active }: { active: number }) {
-  const className = "mt-8 rounded bg-primary px-7 py-6 text-xs font-bold uppercase tracking-[0.22em] text-primary-foreground hover:bg-brand-beige hover:text-brand-black";
-  if (active === 1) {
-    return (
-      <Button asChild className={className}>
-        <Link to="/loja" search={{ ordenar: "novidades" }}>Ver lançamentos</Link>
-      </Button>
-    );
-  }
-  if (active === 2) {
-    return (
-      <Button asChild className={className}>
-        <Link to="/loja" search={{ categoria: "Presente" }}>Kits para presente</Link>
-      </Button>
-    );
-  }
+export function SectionTitle({
+  title,
+  text,
+  as: Heading = "h2",
+}: {
+  title: string;
+  text?: string;
+  as?: "h1" | "h2";
+}) {
   return (
-    <Button asChild className={className}>
-      <Link to="/loja">Conheça nossas cachaças</Link>
-    </Button>
-  );
-}
-
-export function SectionTitle({ eyebrow, title, text }: { eyebrow?: string; title: string; text?: string }) {
-  return (
-    <div className="mx-auto mb-10 max-w-3xl text-center fade-up">
-      {eyebrow ? <p className="text-xs font-semibold uppercase tracking-[0.35em] text-brand-gold">{eyebrow}</p> : null}
-      <div className="mt-4 flex items-center justify-center gap-4 text-brand-gold" aria-hidden="true">
+    <div className="mx-auto mb-12 max-w-2xl text-center">
+      <div className="flex items-center justify-center gap-4 text-brand-gold/80" aria-hidden="true">
         <Flourish className="h-6 w-20" />
         <span className="h-2 w-2 rotate-45 border border-brand-gold" />
         <Flourish className="h-6 w-20 -scale-x-100" />
       </div>
-      <h2 className="mt-4 font-display text-4xl gold-emboss sm:text-5xl">{title}</h2>
-      {text ? <p className="mt-4 text-sm leading-7 text-brand-beige/75 sm:text-base">{text}</p> : null}
+      <Heading className="mt-5 font-display text-4xl font-bold leading-[1.1] gold-emboss sm:text-5xl">
+        {title}
+      </Heading>
+      {text ? <p className="mt-5 text-body sm:text-lg">{text}</p> : null}
     </div>
   );
 }
 
-export function CategoryGrid({ limit }: { limit?: number }) {
-  const list = typeof limit === "number" ? categories.slice(0, limit) : categories;
+/**
+ * Revela os filhos com escalonamento quando entram na tela. Só esconde o que o observador confirma
+ * estar fora da tela; sem JavaScript (ou já visível ao carregar), tudo aparece normalmente.
+ */
+function useStaggerReveal<T extends HTMLElement>() {
+  const ref = useRef<T>(null);
+  useEffect(() => {
+    const root = ref.current;
+    if (!root || !("IntersectionObserver" in window)) return;
+    const children = Array.from(root.children) as HTMLElement[];
+    let first = true;
+    const show = () => children.forEach((child) => delete child.dataset["reveal"]);
+    const observer = new IntersectionObserver((entries) => {
+      const visible = entries.some((entry) => entry.isIntersecting);
+      if (first && !visible) {
+        children.forEach((child, index) => {
+          child.classList.add("reveal");
+          child.style.transitionDelay = `${index * 80}ms`;
+          child.dataset["reveal"] = "hidden";
+        });
+      } else if (visible) {
+        show();
+        observer.disconnect();
+      }
+      first = false;
+    });
+    observer.observe(root);
+    return () => {
+      observer.disconnect();
+      show();
+    };
+  }, []);
+  return ref;
+}
+
+export function CategoryGrid() {
+  const ref = useStaggerReveal<HTMLUListElement>();
   return (
-    <div className="flex flex-wrap justify-center gap-4">
-      {list.map((category) => (
-        <Link
+    <ul ref={ref} className="flex flex-wrap justify-center gap-x-4 gap-y-8 sm:gap-x-6">
+      {categories.map((category) => (
+        <li
           key={category.name}
-          to="/loja"
-          search={category.name === ALL_CATEGORIES ? {} : { categoria: category.name }}
-          className="group w-[calc((100%-1rem)/2)] text-center sm:w-[calc((100%-2rem)/3)] lg:w-[calc((100%-4rem)/5)]"
+          className="w-[calc((100%-1rem)/2)] sm:w-[calc((100%-3rem)/3)] lg:w-[calc((100%-6rem)/5)]"
         >
-          <div className="mx-auto aspect-square overflow-hidden rounded-t-full border border-brand-gold/45 bg-brand-wood p-2 transition-all duration-300 group-hover:border-brand-gold group-hover:shadow-[0_0_28px_color-mix(in_oklch,var(--brand-gold)_20%,transparent)]">
-            <img
-              src={category.image}
-              alt={`Categoria ${category.name}`}
-              className="h-full w-full rounded-t-full object-cover transition-transform duration-500 group-hover:scale-110"
-              loading="lazy"
-              width={360}
-              height={360}
-            />
-          </div>
-          <h3 className="mt-4 font-display text-xl text-brand-gold">{category.name}</h3>
-          {category.description ? <p className="mt-1 hidden text-xs leading-5 text-brand-beige/65 sm:block">{category.description}</p> : null}
-        </Link>
+          <Link
+            to="/loja"
+            search={category.name === ALL_CATEGORIES ? {} : { categoria: category.name }}
+            className="group block rounded-t-full text-center"
+          >
+            <div className="aspect-[4/5] overflow-hidden rounded-t-full border border-brand-gold/40 bg-brand-wood p-1.5 transition-colors duration-300 group-hover:border-brand-gold">
+              <Photo
+                picture={category.image}
+                alt=""
+                sizes="(min-width: 1024px) 220px, (min-width: 640px) 30vw, 45vw"
+                className="motion-zoom h-full w-full rounded-t-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+              />
+            </div>
+            <span className="mt-4 block font-display text-xl text-brand-gold transition-colors group-hover:text-brand-gold-soft">
+              {category.name === ALL_CATEGORIES ? "Todas as cachaças" : category.name}
+            </span>
+          </Link>
+        </li>
       ))}
-    </div>
+    </ul>
   );
 }
 
 export function ProductCarousel({ title, kind }: { title: string; kind: "featured" | "launch" }) {
-  const list = kind === "featured"
-    ? products.filter((product) => product.featured).slice(0, FEATURED_LIMIT)
-    : products.filter((product) => product.launch);
+  const list =
+    kind === "featured"
+      ? products.filter((product) => product.featured).slice(0, FEATURED_LIMIT)
+      : products.filter((product) => product.launch);
   if (list.length === 0) return null;
   return (
-    <section className="py-12">
+    <section className="py-12" aria-labelledby={`vitrine-${kind}`}>
       <div className="mb-6 flex items-end justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand-gold">Vitrine</p>
-          <h2 className="mt-2 font-display text-3xl text-brand-gold sm:text-4xl">{title}</h2>
-        </div>
-        <Button asChild variant="outline" className="hidden rounded border-brand-gold/50 bg-transparent text-brand-gold hover:bg-primary hover:text-primary-foreground sm:inline-flex">
+        <h2 id={`vitrine-${kind}`} className="font-display text-3xl text-brand-gold sm:text-4xl">
+          {title}
+        </h2>
+        <Button asChild variant="outline" className="hidden sm:inline-flex">
           <Link to="/loja">Ver loja</Link>
         </Button>
       </div>
-      <div className="flex snap-x gap-5 overflow-x-auto pb-4">
+      <ul className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-5 overflow-x-auto px-4 pb-4 sm:mx-0 sm:px-0">
         {list.map((product) => (
-          <div key={product.slug} className="min-w-[280px] snap-start sm:min-w-[320px]">
+          <li key={product.slug} className="w-[78%] shrink-0 snap-start sm:w-[320px]">
             <ProductCard product={product} />
-          </div>
+          </li>
         ))}
-      </div>
+      </ul>
     </section>
   );
 }
 
-export function ProductCard({ product }: { product: Product }) {
+export function ProductCard({
+  product,
+  priority = false,
+}: {
+  product: Product;
+  priority?: boolean;
+}) {
   const { addItem } = useCart();
   return (
-    <article className="group h-full overflow-hidden border border-brand-gold/20 bg-card shadow-xl shadow-brand-black/30 transition-all duration-300 hover:border-brand-gold/70">
-      <Link to="/produto/$slug" params={{ slug: product.slug }} className="block">
+    <article className="group flex h-full flex-col border border-brand-gold/15 bg-card transition-colors duration-300 hover:border-brand-gold/60">
+      <Link
+        to="/produto/$slug"
+        params={{ slug: product.slug }}
+        tabIndex={-1}
+        aria-hidden="true"
+        className="block"
+      >
         <div className="relative aspect-[4/5] overflow-hidden bg-brand-black">
-          <img
-            src={product.image}
-            alt={product.name}
-            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-            loading="lazy"
-            width={520}
-            height={650}
+          <Photo
+            picture={product.image}
+            alt=""
+            priority={priority}
+            sizes="(min-width: 1280px) 300px, (min-width: 640px) 45vw, 90vw"
+            className="motion-zoom h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-brand-black/70 to-transparent" />
           {product.badge ? (
-            <span className="absolute left-4 top-4 border border-brand-gold bg-brand-black/80 px-3 py-1 text-[0.65rem] font-bold uppercase tracking-[0.2em] text-brand-gold">
+            <span className="absolute left-4 top-4 border border-brand-gold bg-brand-black/85 px-3 py-1 text-[0.7rem] font-semibold uppercase tracking-label text-brand-gold">
               {product.badge}
             </span>
           ) : null}
         </div>
       </Link>
-      <div className="p-5">
-        <Link to="/produto/$slug" params={{ slug: product.slug }}>
-          <h3 className="font-display text-2xl text-brand-gold transition-colors group-hover:text-brand-gold-soft">{product.name}</h3>
-        </Link>
-        <p className="mt-2 text-xs uppercase tracking-[0.18em] text-brand-beige/60">{product.wood}</p>
-        <p className="mt-2 text-sm text-brand-beige/75">{product.volume} · {product.alcohol}</p>
-        <div className="mt-4">
-          {product.oldPrice ? <span className="mr-2 text-sm text-brand-beige/45 line-through">{formatCurrency(product.oldPrice)}</span> : null}
-          <span className="text-2xl font-bold text-brand-gold">{formatCurrency(product.price)}</span>
-          {product.installment ? <p className="mt-1 text-xs text-brand-beige/65">{product.installment}</p> : null}
+      <div className="flex flex-1 flex-col p-3 sm:p-5">
+        <h3 className="font-display text-lg leading-tight sm:text-2xl">
+          <Link
+            to="/produto/$slug"
+            params={{ slug: product.slug }}
+            className="rounded text-brand-gold transition-colors hover:text-brand-gold-soft"
+          >
+            {product.name}
+          </Link>
+        </h3>
+        <p className="mt-1.5 text-sm leading-snug text-subtle sm:mt-2">
+          {product.name.includes(product.wood)
+            ? product.volume
+            : `${product.wood} · ${product.volume}`}
+        </p>
+        <div className="mt-auto flex items-end justify-between gap-3 pt-3 sm:pt-5">
+          <p className="tabular text-xl font-semibold text-brand-gold sm:text-2xl">
+            {product.oldPrice ? (
+              <span className="mr-2 text-base font-normal text-subtle line-through">
+                {formatCurrency(product.oldPrice)}
+              </span>
+            ) : null}
+            {formatCurrency(product.price)}
+          </p>
         </div>
-        <Button type="button" className="mt-5 w-full rounded bg-primary text-primary-foreground hover:bg-brand-beige hover:text-brand-black" onClick={() => addItem(product)}>
-          <ShoppingBag className="h-4 w-4" /> Adicionar ao carrinho
+        <Button
+          type="button"
+          className="mt-3 w-full px-3 sm:mt-4"
+          onClick={() => addItem(product)}
+          aria-label={`Adicionar ${product.name} ao carrinho`}
+        >
+          <ShoppingBag aria-hidden="true" /> Adicionar
+          <span className="hidden sm:inline"> ao carrinho</span>
         </Button>
       </div>
     </article>
@@ -574,44 +1046,106 @@ export function ProductCard({ product }: { product: Product }) {
 export function Differentials() {
   const items: Array<[typeof Wine, string]> = [
     [Wine, "Produção artesanal"],
-    [Barrel, "Madeiras nobres"],
-    [Truck, "Entrega para todo o Brasil"],
-    [ShieldCheck, "Compra segura"],
-  ] as const;
+    [Barrel, "Barris de 20 a 200 litros"],
+    [Truck, "Envio para todo o Brasil"],
+    [MessageCircle, "Atendimento pelo WhatsApp"],
+  ];
   return (
-    <section className="border-y border-brand-gold/20 bg-brand-wood/70 py-10">
-      <div className="mx-auto grid max-w-7xl grid-cols-2 gap-6 px-4 sm:px-6 lg:grid-cols-4">
+    <section
+      aria-label="Diferenciais"
+      className="border-y border-brand-gold/15 bg-brand-wood/70 py-8"
+    >
+      <ul className="mx-auto grid max-w-7xl grid-cols-2 gap-x-6 gap-y-6 px-4 sm:px-6 lg:grid-cols-4">
         {items.map(([Icon, label]) => (
-          <div key={label} className="flex items-center gap-3">
-            <Icon className="h-9 w-9 text-brand-gold" aria-hidden="true" />
-            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-beige">{label}</span>
-          </div>
+          <li key={label} className="flex items-center gap-3">
+            <Icon
+              className="h-8 w-8 shrink-0 text-brand-gold"
+              strokeWidth={1.5}
+              aria-hidden="true"
+            />
+            <span className="text-xs font-medium uppercase leading-snug tracking-label text-brand-beige">
+              {label}
+            </span>
+          </li>
         ))}
+      </ul>
+    </section>
+  );
+}
+
+export function StorySection() {
+  return (
+    <section
+      aria-labelledby="historia-titulo"
+      className="bg-brand-black pb-20 pt-8 sm:pb-28 sm:pt-12"
+    >
+      <div className="mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-[1fr_1.05fr] lg:items-stretch lg:gap-16">
+        <figure className="relative min-h-[360px] overflow-hidden border border-brand-gold/20">
+          <Photo
+            picture={story.image}
+            alt="Garrafa Dom Aldino Barril de Carvalho e copo sobre a mesa, diante de barris da marca e alambiques de cobre"
+            sizes="(min-width: 1024px) 45vw, 100vw"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+          <div
+            className="absolute inset-0 bg-gradient-to-t from-brand-black/70 via-transparent to-transparent"
+            aria-hidden="true"
+          />
+          <figcaption className="absolute bottom-6 left-6 right-6">
+            <span className="block font-display text-2xl text-brand-gold">Desde 2023</span>
+            <span className="text-sm text-body">Do barzinho na sala aos barris de 200 litros</span>
+          </figcaption>
+        </figure>
+        <div className="flex flex-col justify-center">
+          <h2
+            id="historia-titulo"
+            className="font-display text-4xl font-bold leading-[1.1] gold-emboss sm:text-5xl"
+          >
+            Como nasceu a Dom Aldino
+          </h2>
+          <div className="mt-7 max-w-[62ch] space-y-5 text-body">
+            {story.summary.map((paragraph) => (
+              <p key={paragraph}>{paragraph}</p>
+            ))}
+          </div>
+          <div>
+            <Button asChild className="mt-9">
+              <Link to="/nossa-historia">Ler a história completa</Link>
+            </Button>
+          </div>
+        </div>
       </div>
     </section>
   );
 }
 
-export function StorySection({ compact = false }: { compact?: boolean }) {
+export function FollowUs() {
   return (
-    <section className={cn("bg-brand-black py-16 sm:py-24", compact && "py-12")}>
-      <div className="mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
-        <div className="relative overflow-hidden border border-brand-gold/25">
-          <img src={story.image} alt="Garrafa Dom Aldino Barril de Carvalho e copo sobre a mesa, diante de barris da marca e alambiques de cobre" className="h-full min-h-[360px] w-full object-cover" loading="lazy" width={900} height={720} />
-          <div className="absolute inset-0 bg-gradient-to-t from-brand-black/65 to-transparent" />
-          <div className="absolute bottom-6 left-6 border border-brand-gold/50 bg-brand-black/70 px-5 py-4 backdrop-blur">
-            <p className="font-display text-2xl text-brand-gold">Desde a origem</p>
-            <p className="text-xs uppercase tracking-[0.24em] text-brand-beige/70">tempo, madeira e tradição</p>
-          </div>
-        </div>
-        <div className="fade-up">
-          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-brand-gold">Nossa História</p>
-          <h2 className="mt-4 font-display text-4xl gold-emboss sm:text-5xl">Conheça a história da Dom Aldino</h2>
-          {story.summary.map((paragraph, index) => (
-            <p key={paragraph} className={cn("leading-8 text-brand-beige/78", index === 0 ? "mt-6" : "mt-4")}>{paragraph}</p>
-          ))}
-          <Button asChild className="mt-8 rounded bg-primary text-primary-foreground hover:bg-brand-beige hover:text-brand-black">
-            <Link to="/nossa-historia">Ler a história completa</Link>
+    <section
+      aria-labelledby="acompanhe-titulo"
+      className="border-y border-brand-gold/15 bg-brand-wood py-16"
+    >
+      <div className="mx-auto max-w-2xl px-4 text-center sm:px-6">
+        <h2
+          id="acompanhe-titulo"
+          className="font-display text-3xl font-bold text-brand-gold sm:text-4xl"
+        >
+          Acompanhe a Dom Aldino
+        </h2>
+        <p className="mt-4 text-body">
+          As novidades aparecem no Instagram {brand.instagram}. Para encomendas e dúvidas, fale com
+          a gente pelo WhatsApp.
+        </p>
+        <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+          <Button asChild size="lg">
+            <a href={`https://wa.me/${brand.whatsapp}`} target="_blank" rel="noreferrer">
+              <MessageCircle aria-hidden="true" /> Falar no WhatsApp
+            </a>
+          </Button>
+          <Button asChild size="lg" variant="outline">
+            <a href={brand.instagramUrl} target="_blank" rel="noreferrer">
+              <Instagram aria-hidden="true" /> Seguir no Instagram
+            </a>
           </Button>
         </div>
       </div>
@@ -619,110 +1153,155 @@ export function StorySection({ compact = false }: { compact?: boolean }) {
   );
 }
 
-export function Newsletter() {
-  const [email, setEmail] = useState("");
-  const [sent, setSent] = useState(false);
-  return (
-    <section className="border-y border-brand-gold/15 bg-brand-wood py-14">
-      <div className="mx-auto grid max-w-5xl gap-6 px-4 text-center sm:px-6">
-        <Crown className="mx-auto h-8 w-8 text-brand-gold" aria-hidden="true" />
-        <h2 className="font-display text-3xl text-brand-gold sm:text-4xl">Receba lançamentos e ofertas exclusivas</h2>
-        <form
-          className="mx-auto flex w-full max-w-xl flex-col gap-3 sm:flex-row"
-          onSubmit={(event) => {
-            event.preventDefault();
-            if (email.trim()) setSent(true);
-          }}
-        >
-          <input
-            className="min-h-12 flex-1 rounded border border-brand-gold/35 bg-brand-black px-4 text-sm text-brand-beige outline-none focus:border-brand-gold"
-            type="email"
-            placeholder="seu@email.com"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            maxLength={120}
-            required
-          />
-          <Button className="rounded bg-primary px-7 text-primary-foreground hover:bg-brand-beige hover:text-brand-black">Cadastrar</Button>
-        </form>
-        {sent ? <p className="text-sm text-brand-gold">Cadastro recebido. Em breve enviaremos novidades Dom Aldino.</p> : null}
-      </div>
-    </section>
-  );
-}
-
 function SiteFooter() {
+  const link = "inline-flex min-h-8 items-center gap-2 hover:text-brand-gold";
   return (
-    <footer className="bg-brand-black py-12 text-brand-beige">
-      <div className="mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 lg:grid-cols-[1.2fr_0.8fr_0.8fr_1fr]">
+    <footer className="bg-brand-black pb-28 pt-14 text-brand-beige lg:pb-14">
+      <div className="mx-auto grid max-w-7xl gap-10 px-4 sm:grid-cols-2 sm:px-6 lg:grid-cols-[1.3fr_0.8fr_0.9fr_1.1fr]">
         <div>
-          <LogoMark compact />
-          <p className="mt-4 max-w-sm text-sm leading-7 text-brand-beige/70">{brand.slogan}</p>
-          <p className="mt-5 text-xs uppercase tracking-[0.2em] text-brand-gold">Aprecie com moderação. Venda proibida para menores de 18 anos.</p>
+          <LogoMark />
+          <p className="mt-4 max-w-xs text-sm text-body">{brand.slogan}.</p>
+          <p className="mt-5 max-w-xs text-xs uppercase leading-relaxed tracking-label text-brand-gold">
+            Aprecie com moderação. Venda proibida para menores de 18 anos.
+          </p>
         </div>
-          <FooterGroup />
-        <div>
-          <h3 className="text-xs font-semibold uppercase tracking-[0.25em] text-brand-gold">Pagamento</h3>
-          <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs text-brand-beige/70">
-            {brand.payments.map((item) => (
-              <span key={item} className="border border-brand-gold/20 py-2">{item}</span>
+        <nav aria-labelledby="rodape-paginas">
+          <h2
+            id="rodape-paginas"
+            className="text-xs font-semibold uppercase tracking-caps text-brand-gold"
+          >
+            Páginas
+          </h2>
+          <ul className="mt-4 grid gap-1 text-sm text-body">
+            {NAV_LINKS.slice(1).map(([label, to]) => (
+              <li key={to}>
+                <Link to={to} className={link}>
+                  {label}
+                </Link>
+              </li>
             ))}
-          </div>
+          </ul>
+        </nav>
+        <div>
+          <h2 className="text-xs font-semibold uppercase tracking-caps text-brand-gold">
+            Pagamento e envio
+          </h2>
+          <ul className="mt-4 flex flex-wrap gap-2 text-sm text-body">
+            {brand.payments.map((item) => (
+              <li key={item} className="border border-brand-gold/20 px-3 py-1.5">
+                {item}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-4 text-sm text-subtle">{brand.shipping}, para todo o Brasil.</p>
         </div>
         <div>
-          <h3 className="text-xs font-semibold uppercase tracking-[0.25em] text-brand-gold">Contato</h3>
-          <div className="mt-4 space-y-3 text-sm text-brand-beige/70">
-            <p className="flex items-center gap-2"><MapPin className="h-4 w-4 text-brand-gold" /> {brand.address}</p>
-            <a className="block hover:text-brand-gold" href={`https://wa.me/${brand.whatsapp}`} target="_blank" rel="noreferrer">{brand.phone}</a>
-            <a className="block hover:text-brand-gold" href={`mailto:${brand.email}`}>{brand.email}</a>
-            <p className="flex items-center gap-2"><MapPin className="h-4 w-4 text-brand-gold" /> {brand.branch.name}</p>
-            <a className="block hover:text-brand-gold" href={`https://wa.me/${brand.branch.whatsapp}`} target="_blank" rel="noreferrer">{brand.branch.phone}</a>
-            <a className="flex items-center gap-2 hover:text-brand-gold" href={brand.instagramUrl} target="_blank" rel="noreferrer"><Instagram className="h-4 w-4 text-brand-gold" /> {brand.instagram}</a>
-            <a className="flex items-center gap-2 hover:text-brand-gold" href={brand.facebookUrl} target="_blank" rel="noreferrer"><Facebook className="h-4 w-4 text-brand-gold" /> Facebook</a>
-          </div>
+          <h2 className="text-xs font-semibold uppercase tracking-caps text-brand-gold">Contato</h2>
+          <ul className="mt-4 grid gap-1 text-sm text-body">
+            <li>
+              <a
+                className={link}
+                href={`https://wa.me/${brand.whatsapp}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <MessageCircle className="h-4 w-4 text-brand-gold" aria-hidden="true" /> Porto Velho
+                · {brand.phone}
+              </a>
+            </li>
+            <li>
+              <a
+                className={link}
+                href={`https://wa.me/${brand.branch.whatsapp}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <MessageCircle className="h-4 w-4 text-brand-gold" aria-hidden="true" /> Goiânia ·{" "}
+                {brand.branch.phone}
+              </a>
+            </li>
+            <li>
+              <a className={cn(link, "break-all")} href={`mailto:${brand.email}`}>
+                <Mail className="h-4 w-4 shrink-0 text-brand-gold" aria-hidden="true" />{" "}
+                {brand.email}
+              </a>
+            </li>
+            <li>
+              <a className={link} href={brand.instagramUrl} target="_blank" rel="noreferrer">
+                <Instagram className="h-4 w-4 text-brand-gold" aria-hidden="true" />{" "}
+                {brand.instagram}
+              </a>
+            </li>
+            <li>
+              <a className={link} href={brand.facebookUrl} target="_blank" rel="noreferrer">
+                <Facebook className="h-4 w-4 text-brand-gold" aria-hidden="true" /> Facebook
+              </a>
+            </li>
+          </ul>
         </div>
       </div>
     </footer>
   );
 }
 
-function FooterGroup() {
-  return (
-    <div>
-      <h3 className="text-xs font-semibold uppercase tracking-[0.25em] text-brand-gold">Institucional</h3>
-      <div className="mt-4 grid gap-3 text-sm text-brand-beige/70">
-        <Link to="/nossa-historia" className="hover:text-brand-gold">Nossa História</Link>
-        <Link to="/loja" className="hover:text-brand-gold">Loja</Link>
-        <Link to="/categorias" className="hover:text-brand-gold">Categorias</Link>
-        <Link to="/contato" className="hover:text-brand-gold">Contato</Link>
-      </div>
-    </div>
-  );
-}
-
 function FloatingWhatsApp() {
+  const onProductPage = useRouterState({
+    select: (state) => state.location.pathname.startsWith("/produto/"),
+  });
   return (
     <a
       href={`https://wa.me/${brand.whatsapp}`}
       target="_blank"
       rel="noreferrer"
-      aria-label="Falar com Dom Aldino no WhatsApp"
-      className="fixed bottom-5 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-xl shadow-brand-gold/25 transition-transform hover:scale-105"
+      aria-label="Conversar com a Dom Aldino no WhatsApp"
+      className={cn(
+        "press fixed bottom-5 right-4 z-40 h-13 w-13 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_10px_30px_-8px_rgb(0_0_0/0.8)] hover:bg-brand-gold-soft sm:right-6",
+        onProductPage ? "hidden lg:flex" : "flex",
+      )}
     >
-      <Phone className="h-6 w-6" />
+      <MessageCircle className="h-6 w-6" aria-hidden="true" />
     </a>
   );
 }
 
-export function QuantityControl({ quantity, setQuantity }: { quantity: number; setQuantity: (quantity: number) => void }) {
+export function QuantityControl({
+  quantity,
+  setQuantity,
+  label,
+}: {
+  quantity: number;
+  setQuantity: (quantity: number) => void;
+  label?: string;
+}) {
   return (
-    <div className="inline-flex items-center border border-brand-gold/30">
-      <Button type="button" variant="ghost" size="icon" className="h-9 w-9 rounded-none text-brand-gold hover:bg-brand-wood" onClick={() => setQuantity(Math.max(1, quantity - 1))} aria-label="Diminuir quantidade">
-        <Minus className="h-4 w-4" />
+    <div
+      role="group"
+      aria-label={label ? `Quantidade de ${label}` : "Quantidade"}
+      className="inline-flex items-center border border-brand-gold/30"
+    >
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="rounded-none"
+        onClick={() => setQuantity(quantity - 1)}
+        disabled={quantity <= 1}
+        aria-label="Diminuir quantidade"
+      >
+        <Minus aria-hidden="true" />
       </Button>
-      <span className="w-10 text-center text-sm font-semibold">{quantity}</span>
-      <Button type="button" variant="ghost" size="icon" className="h-9 w-9 rounded-none text-brand-gold hover:bg-brand-wood" onClick={() => setQuantity(quantity + 1)} aria-label="Aumentar quantidade">
-        <Plus className="h-4 w-4" />
+      <span className="tabular w-9 text-center font-semibold" aria-live="polite">
+        {quantity}
+      </span>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="rounded-none"
+        onClick={() => setQuantity(quantity + 1)}
+        aria-label="Aumentar quantidade"
+      >
+        <Plus aria-hidden="true" />
       </Button>
     </div>
   );
@@ -736,37 +1315,55 @@ export function ProductTabs({ product }: { product: Product }) {
   ].filter((note): note is [string, string] => Boolean(note[1]));
   const tabs: Array<[string, string]> = [
     ["descricao", "Descrição"],
-    ...(notes.length ? [["notas", "Notas"] as [string, string]] : []),
+    ...(notes.length ? [["notas", "Degustação"] as [string, string]] : []),
     ...(product.pairing ? [["harmonizacao", "Harmonização"] as [string, string]] : []),
     ["ficha", "Ficha técnica"],
   ];
-  const panel = "border border-t-0 border-brand-gold/20 bg-brand-black/60 p-6";
+  const panel = "mt-0 border border-t-0 border-brand-gold/15 bg-brand-black/50 p-6 text-body";
   return (
     <Tabs defaultValue="descricao" className="mt-12">
-      <TabsList className={cn("grid h-auto grid-cols-2 rounded-none border border-brand-gold/20 bg-brand-wood p-1", tabs.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-4")}>
+      <TabsList className="no-scrollbar flex h-auto w-full justify-start overflow-x-auto rounded-none border-b border-brand-gold/25 bg-transparent p-0">
         {tabs.map(([value, label]) => (
-          <TabsTrigger key={value} value={value} className="rounded data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">{label}</TabsTrigger>
+          <TabsTrigger
+            key={value}
+            value={value}
+            className="min-h-11 shrink-0 rounded-none border-b-2 border-transparent px-4 text-sm text-subtle data-[state=active]:border-brand-gold data-[state=active]:bg-transparent data-[state=active]:text-brand-gold data-[state=active]:shadow-none"
+          >
+            {label}
+          </TabsTrigger>
         ))}
       </TabsList>
-      <TabsContent value="descricao" className={cn(panel, "space-y-4 leading-8 text-brand-beige/78")}>
-        {product.description.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+      <TabsContent value="descricao" className={cn(panel, "space-y-4")}>
+        {product.description.map((paragraph) => (
+          <p key={paragraph}>{paragraph}</p>
+        ))}
       </TabsContent>
       {notes.length ? (
         <TabsContent value="notas" className={panel}>
-          <div className={cn("grid gap-4", notes.length > 1 && "sm:grid-cols-2", notes.length > 2 && "lg:grid-cols-3")}>
-            {notes.map(([title, text]) => <Note key={title} title={title} text={text} />)}
-          </div>
+          <dl className="space-y-5">
+            {notes.map(([title, text]) => (
+              <div key={title}>
+                <dt className="font-display text-xl text-brand-gold">{title}</dt>
+                <dd className="mt-1">{text}</dd>
+              </div>
+            ))}
+          </dl>
         </TabsContent>
       ) : null}
       {product.pairing ? (
-        <TabsContent value="harmonizacao" className={cn(panel, "leading-8 text-brand-beige/78")}>{product.pairing}</TabsContent>
+        <TabsContent value="harmonizacao" className={panel}>
+          {product.pairing}
+        </TabsContent>
       ) : null}
       <TabsContent value="ficha" className={panel}>
-        <dl className="grid gap-3 sm:grid-cols-2">
+        <dl className="grid gap-x-8 sm:grid-cols-2">
           {product.specs.map(([key, value]) => (
-            <div key={key} className="flex justify-between gap-4 border-b border-brand-gold/15 pb-3">
-              <dt className="text-brand-beige/60">{key}</dt>
-              <dd className="text-right font-semibold text-brand-gold">{value}</dd>
+            <div
+              key={key}
+              className="flex justify-between gap-4 border-b border-brand-gold/10 py-3"
+            >
+              <dt className="text-subtle">{key}</dt>
+              <dd className="text-right font-medium text-brand-beige">{value}</dd>
             </div>
           ))}
         </dl>
@@ -775,130 +1372,21 @@ export function ProductTabs({ product }: { product: Product }) {
   );
 }
 
-function Note({ title, text }: { title: string; text: string }) {
-  return (
-    <div className="border border-brand-gold/20 bg-brand-wood/60 p-4">
-      <h4 className="font-display text-xl text-brand-gold">{title}</h4>
-      <p className="mt-2 text-sm leading-6 text-brand-beige/75">{text}</p>
-    </div>
-  );
-}
-
-export function ShopFilters({ selectedCategory, onCategoryChange, selectedWood, onWoodChange, sort, onSortChange }: {
-  selectedCategory: string;
-  onCategoryChange: (value: string) => void;
-  selectedWood: string;
-  onWoodChange: (value: string) => void;
-  sort: string;
-  onSortChange: (value: string) => void;
-}) {
-  const woods = Array.from(new Set(products.map((product) => product.wood)));
-  const prices = products.map((product) => product.price);
-  const volumes = Array.from(new Set(products.map((product) => product.volume)));
-  return (
-    <aside className="border border-brand-gold/20 bg-brand-wood/70 p-5 lg:sticky lg:top-32 lg:self-start">
-      <div className="mb-5 flex items-center gap-2 text-brand-gold">
-        <Filter className="h-5 w-5" />
-        <h2 className="font-display text-2xl">Filtros</h2>
-      </div>
-      <FilterSelect label="Categoria" value={selectedCategory} onChange={onCategoryChange} options={categories.map((category) => category.name)} />
-      <FilterSelect label="Madeira" value={selectedWood} onChange={onWoodChange} options={["Todas", ...woods]} />
-      <FilterSelect label="Ordenar" value={sort} onChange={onSortChange} options={["Mais vendidos", "Menor preço", "Maior preço", "Novidades"]} />
-      <div className="mt-5 border-t border-brand-gold/15 pt-5">
-        <p className="text-xs uppercase tracking-[0.22em] text-brand-gold">Faixa de preço</p>
-        <div className="mt-3 grid grid-cols-2 gap-2 text-sm text-brand-beige/70">
-          <span className="border border-brand-gold/20 px-3 py-2">{formatCurrency(Math.min(...prices))}</span>
-          <span className="border border-brand-gold/20 px-3 py-2">{formatCurrency(Math.max(...prices))}</span>
-        </div>
-      </div>
-      <div className="mt-5 border-t border-brand-gold/15 pt-5">
-        <p className="text-xs uppercase tracking-[0.22em] text-brand-gold">Volume</p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {volumes.map((item) => <span key={item} className="border border-brand-gold/20 px-3 py-2 text-xs text-brand-beige/70">{item}</span>)}
-        </div>
-      </div>
-    </aside>
-  );
-}
-
-function FilterSelect({ label, value, onChange, options }: { label: string; value: string; onChange: (value: string) => void; options: string[] }) {
-  return (
-    <label className="mt-5 block text-xs uppercase tracking-[0.22em] text-brand-gold">
-      {label}
-      <select
-        className="mt-2 w-full rounded border border-brand-gold/25 bg-brand-black px-3 py-3 text-sm normal-case tracking-normal text-brand-beige outline-none focus:border-brand-gold"
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-      >
-        {options.map((option) => <option key={option} value={option}>{option}</option>)}
-      </select>
-    </label>
-  );
-}
-
-export function TrustStrip() {
-  const items: Array<[typeof CheckCircle2, string]> = [
-    [CheckCircle2, "Lotes pequenos e controle artesanal"],
-    [PackageCheck, "Embalagem protegida para envio"],
-    [Award, "Seleção premium para degustação"],
-  ];
-
-  return (
-    <div className="grid gap-4 sm:grid-cols-3">
-      {items.map(([Icon, text]) => (
-        <div key={text} className="flex items-center gap-3 border border-brand-gold/20 bg-brand-wood/45 p-4 text-sm text-brand-beige/75">
-          <Icon className="h-6 w-6 shrink-0 text-brand-gold" />
-          <span>{text}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-export function ContactCards() {
-  const whatsappLink = "hover:text-brand-gold";
-  const items: Array<[typeof Phone, string, React.ReactNode]> = [
-    [
-      Phone,
-      "WhatsApp",
-      <>
-        <a className={whatsappLink} href={`https://wa.me/${brand.whatsapp}`} target="_blank" rel="noreferrer">Porto Velho: {brand.phone}</a>
-        <br />
-        <a className={whatsappLink} href={`https://wa.me/${brand.branch.whatsapp}`} target="_blank" rel="noreferrer">Goiânia: {brand.branch.phone}</a>
-      </>,
-    ],
-    [Mail, "E-mail", brand.email],
-    [
-      MapPin,
-      "Localização",
-      <>
-        Porto Velho: {brand.address}
-        <br />
-        Goiânia: {brand.branch.city}
-        <br />
-        Entregamos para todo o Brasil
-      </>,
-    ],
-  ];
-
-  return (
-    <div className="grid gap-5 md:grid-cols-3">
-      {items.map(([Icon, title, content]) => (
-        <div key={title} className="border border-brand-gold/20 bg-card p-6">
-          <Icon className="h-8 w-8 text-brand-gold" />
-          <h3 className="mt-4 font-display text-2xl text-brand-gold">{title}</h3>
-          <p className="mt-2 text-sm leading-6 text-brand-beige/70">{content}</p>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 function Flourish({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 120 30" fill="none" className={className} aria-hidden="true">
-      <path d="M3 16c20 0 18-13 33-13 10 0 12 10 2 12-7 1-14-3-9-9 7 21 28 22 43 7 10-10 24-11 45 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-      <path d="M58 21c8 0 10 4 13 7 3-8 10-9 18-9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <path
+        d="M3 16c20 0 18-13 33-13 10 0 12 10 2 12-7 1-14-3-9-9 7 21 28 22 43 7 10-10 24-11 45 3"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M58 21c8 0 10 4 13 7 3-8 10-9 18-9"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }

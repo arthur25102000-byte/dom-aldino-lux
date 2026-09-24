@@ -18,15 +18,23 @@ function NotFoundComponent() {
     <DomAldinoShell>
       <div className="flex min-h-screen items-center justify-center bg-background px-4 pt-28">
         <div className="max-w-md text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-brand-gold">Página indisponível</p>
-          <h1 className="mt-3 font-display text-7xl gold-emboss">404</h1>
-          <h2 className="mt-4 text-xl font-semibold text-foreground">Esta página não foi encontrada</h2>
-          <p className="mt-2 text-sm text-brand-beige/70">
+          <p className="font-display text-7xl font-bold gold-emboss" aria-hidden="true">
+            404
+          </p>
+          <h1 className="mt-4 font-display text-3xl text-brand-beige">
+            Esta página não foi encontrada
+          </h1>
+          <p className="mt-3 text-body">
             O endereço pode ter mudado ou não existir na loja Dom Aldino.
           </p>
-          <Button asChild className="mt-6 rounded bg-primary text-primary-foreground hover:bg-brand-beige hover:text-brand-black">
-            <Link to="/">Voltar ao início</Link>
-          </Button>
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <Button asChild>
+              <Link to="/loja">Ver a loja</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link to="/">Voltar ao início</Link>
+            </Button>
+          </div>
         </div>
       </div>
     </DomAldinoShell>
@@ -40,15 +48,11 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
     <DomAldinoShell>
       <div className="flex min-h-screen items-center justify-center bg-background px-4 pt-28">
         <div className="max-w-md text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-brand-gold">Dom Aldino</p>
-          <h1 className="mt-3 font-display text-4xl gold-emboss">Esta página não carregou</h1>
-          <p className="mt-4 text-sm text-brand-beige/70">
-            Tente novamente ou volte para a página inicial da loja.
-          </p>
+          <h1 className="font-display text-4xl font-bold gold-emboss">Esta página não carregou</h1>
+          <p className="mt-4 text-body">Tente novamente ou volte para a página inicial da loja.</p>
           <div className="mt-6 flex flex-wrap justify-center gap-2">
             <Button
               type="button"
-              className="rounded bg-primary text-primary-foreground hover:bg-brand-beige hover:text-brand-black"
               onClick={() => {
                 router.invalidate();
                 reset();
@@ -56,7 +60,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
             >
               Tentar novamente
             </Button>
-            <Button asChild variant="outline" className="rounded border-brand-gold/50 bg-transparent text-brand-gold hover:bg-brand-wood hover:text-brand-beige">
+            <Button asChild variant="outline">
               <Link to="/">Voltar ao início</Link>
             </Button>
           </div>
@@ -70,6 +74,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
+      { name: "theme-color", content: "#141414" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -79,7 +84,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Jost:wght@400..600&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap",
       },
       {
         rel: "stylesheet",

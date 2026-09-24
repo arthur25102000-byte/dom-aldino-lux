@@ -1,7 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { ContactCards, Newsletter, SectionTitle, brand } from "@/components/dom-aldino";
+import { Facebook, Instagram, Mail, MessageCircle } from "lucide-react";
+
+import { SectionTitle, brand } from "@/components/dom-aldino";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/contato")({
   head: () => ({
@@ -9,7 +12,8 @@ export const Route = createFileRoute("/contato")({
       { title: "Contato – Dom Aldino" },
       {
         name: "description",
-        content: "Fale com a Dom Aldino para comprar cachaças premium, kits para presente e receber atendimento pelo WhatsApp.",
+        content:
+          "Fale com a Dom Aldino para comprar cachaças premium, kits para presente e receber atendimento pelo WhatsApp.",
       },
       { property: "og:title", content: "Contato – Dom Aldino" },
       {
@@ -24,26 +28,84 @@ export const Route = createFileRoute("/contato")({
 });
 
 function ContactPage() {
+  const units = [
+    { city: "Porto Velho, RO", label: "Matriz", phone: brand.phone, whatsapp: brand.whatsapp },
+    {
+      city: brand.branch.city,
+      label: brand.branch.name,
+      phone: brand.branch.phone,
+      whatsapp: brand.branch.whatsapp,
+    },
+  ];
+  const row = "flex min-h-11 items-center gap-3 hover:text-brand-gold";
+
   return (
-    <div className="bg-brand-black pt-36">
-      <section className="mx-auto max-w-7xl px-4 pb-16 sm:px-6">
+    <div className="bg-brand-black pt-32">
+      <section className="mx-auto max-w-6xl px-4 pb-24 sm:px-6">
         <SectionTitle
-          eyebrow="Contato"
-          title="Atendimento Dom Aldino"
-          text="Tire dúvidas, solicite kits para presente ou finalize seu pedido com nossa equipe."
+          as="h1"
+          title="Fale com a Dom Aldino"
+          text="Pedidos, kits para presente e dúvidas são atendidos pelo WhatsApp. Envie sua seleção e o CEP para combinar o frete."
         />
-        <ContactCards />
-        <div className="mt-10 border border-brand-gold/20 bg-card p-6 text-center sm:p-10">
-          <h2 className="font-display text-3xl text-brand-gold">Comprar pelo WhatsApp</h2>
-          <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-brand-beige/75">
-            Envie sua seleção, confirme o CEP e receba as opções de frete para todo o Brasil.
-          </p>
-          <Button asChild className="mt-6 rounded bg-primary text-primary-foreground hover:bg-brand-beige hover:text-brand-black">
-            <a href={`https://wa.me/${brand.whatsapp}`} target="_blank" rel="noreferrer">Falar agora</a>
-          </Button>
+        <div className="grid gap-5 md:grid-cols-2">
+          {units.map((unit) => (
+            <div
+              key={unit.phone}
+              className="flex flex-col border border-brand-gold/20 bg-card p-7 sm:p-9"
+            >
+              <p className="text-xs font-medium uppercase tracking-caps text-subtle">
+                {unit.label}
+              </p>
+              <h2 className="mt-2 font-display text-3xl text-brand-gold">{unit.city}</h2>
+              <p className="tabular mt-3 text-lg text-brand-beige">{unit.phone}</p>
+              <Button asChild size="lg" className="mt-7 self-start">
+                <a href={`https://wa.me/${unit.whatsapp}`} target="_blank" rel="noreferrer">
+                  <MessageCircle aria-hidden="true" /> Conversar no WhatsApp
+                </a>
+              </Button>
+            </div>
+          ))}
+        </div>
+        <div className="mt-14 grid gap-10 border-t border-brand-gold/15 pt-10 md:grid-cols-3">
+          <div>
+            <h2 className="text-xs font-semibold uppercase tracking-caps text-brand-gold">
+              Outros canais
+            </h2>
+            <ul className="mt-3 text-body">
+              <li>
+                <a className={cn(row, "break-all")} href={`mailto:${brand.email}`}>
+                  <Mail className="h-5 w-5 shrink-0 text-brand-gold" aria-hidden="true" />
+                  {brand.email}
+                </a>
+              </li>
+              <li>
+                <a className={row} href={brand.instagramUrl} target="_blank" rel="noreferrer">
+                  <Instagram className="h-5 w-5 text-brand-gold" aria-hidden="true" />
+                  {brand.instagram}
+                </a>
+              </li>
+              <li>
+                <a className={row} href={brand.facebookUrl} target="_blank" rel="noreferrer">
+                  <Facebook className="h-5 w-5 text-brand-gold" aria-hidden="true" />
+                  Facebook
+                </a>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h2 className="text-xs font-semibold uppercase tracking-caps text-brand-gold">
+              Pagamento
+            </h2>
+            <p className="mt-4 text-body">{brand.payments.join(", ")}.</p>
+          </div>
+          <div>
+            <h2 className="text-xs font-semibold uppercase tracking-caps text-brand-gold">Envio</h2>
+            <p className="mt-4 text-body">
+              Enviamos para todo o Brasil. {brand.shipping}, conforme o CEP.
+            </p>
+          </div>
         </div>
       </section>
-      <Newsletter />
     </div>
   );
 }

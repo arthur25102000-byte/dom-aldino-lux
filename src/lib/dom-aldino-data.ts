@@ -1,23 +1,48 @@
 import logo from "@/assets/dom-aldino-logo.webp";
-import sceneBarricaria from "@/assets/cena-barricaria.jpg";
-import sceneCaixaDeMadeira from "@/assets/cena-caixa-de-madeira.jpg";
-import sceneKitExperiencia from "@/assets/cena-kit-experiencia.jpg";
-import cenaBarrilGarrafa from "@/assets/cena-barril-garrafa.jpg";
-import amburanaBrasileira from "@/assets/produtos/amburana-brasileira.jpg";
-import amendoimDoCampo from "@/assets/produtos/amendoim-do-campo.jpg";
-import balsamoBrasileiro from "@/assets/produtos/balsamo-brasileiro.jpg";
-import blend4Madeiras from "@/assets/produtos/blend-4-madeiras.jpg";
-import caixaDeMadeira from "@/assets/produtos/caixa-de-madeira.jpg";
-import carvalhoAmericano from "@/assets/produtos/carvalho-americano.jpg";
-import carvalhoEuropeu from "@/assets/produtos/carvalho-europeu.jpg";
-import carvalhoFrances from "@/assets/produtos/carvalho-frances.jpg";
-import garrafaSacoVeludo from "@/assets/produtos/garrafa-saco-veludo.jpg";
-import jequitibaRosa from "@/assets/produtos/jequitiba-rosa.jpg";
-import justaEPerfeita from "@/assets/produtos/justa-e-perfeita.jpg";
-import kitExperiencia from "@/assets/produtos/kit-experiencia-dom-aldino.jpg";
-import landmarks from "@/assets/produtos/landmarks.jpg";
-import prataInNatura from "@/assets/produtos/prata-in-natura.jpg";
-import sassafras from "@/assets/produtos/sassafras.jpg";
+
+// Fotos em WebP com duas larguras cada (geradas a partir dos JPGs originais).
+const webp = import.meta.glob("../assets/**/*.webp", {
+  eager: true,
+  import: "default",
+}) as Record<string, string>;
+
+export type Picture = { src: string; srcSet: string; width: number; height: number };
+
+function picture(path: string, [small, large]: [number, number], ratio: number): Picture {
+  const url = (width: number) => {
+    const found = webp[`../assets/${path}-${width}.webp`];
+    if (!found) throw new Error(`Imagem não encontrada: ${path}-${width}.webp`);
+    return found;
+  };
+  return {
+    src: url(large),
+    srcSet: `${url(small)} ${small}w, ${url(large)} ${large}w`,
+    width: large,
+    height: Math.round(large * ratio),
+  };
+}
+
+const productPhoto = (name: string) => picture(`produtos/${name}`, [480, 900], 4 / 3);
+const scene = (name: string, ratio = 2 / 3) => picture(name, [800, 1600], ratio);
+
+const sceneBarricaria = scene("cena-barricaria");
+const sceneKitExperiencia = scene("cena-kit-experiencia", 1256 / 1536);
+const cenaBarrilGarrafa = scene("cena-barril-garrafa");
+const amburanaBrasileira = productPhoto("amburana-brasileira");
+const amendoimDoCampo = productPhoto("amendoim-do-campo");
+const balsamoBrasileiro = productPhoto("balsamo-brasileiro");
+const blend4Madeiras = productPhoto("blend-4-madeiras");
+const caixaDeMadeira = productPhoto("caixa-de-madeira");
+const carvalhoAmericano = productPhoto("carvalho-americano");
+const carvalhoEuropeu = productPhoto("carvalho-europeu");
+const carvalhoFrances = productPhoto("carvalho-frances");
+const garrafaSacoVeludo = productPhoto("garrafa-saco-veludo");
+const jequitibaRosa = productPhoto("jequitiba-rosa");
+const justaEPerfeita = productPhoto("justa-e-perfeita");
+const kitExperiencia = productPhoto("kit-experiencia-dom-aldino");
+const landmarks = productPhoto("landmarks");
+const prataInNatura = productPhoto("prata-in-natura");
+const sassafras = productPhoto("sassafras");
 
 export type Product = {
   slug: string;
@@ -30,7 +55,7 @@ export type Product = {
   oldPrice?: number;
   installment?: string;
   badge?: "Novo" | "Mais vendido" | "Promoção";
-  image: string;
+  image: Picture;
   /** Primeiro parágrafo, exibido no topo da página do produto. */
   summary: string;
   /** Texto completo da aba "Descrição", um item por parágrafo. */
@@ -46,6 +71,8 @@ export type Product = {
   launch?: boolean;
 };
 
+/** O carrinho guarda só o produto e a quantidade; nome e preço vêm sempre do catálogo. */
+export type CartLine = { slug: string; quantity: number };
 export type CartItem = Product & { quantity: number };
 
 export const brand = {
@@ -80,7 +107,7 @@ export const story = {
   full: [
     "A história da cachaça Dom Aldino começa em meados do ano de 2023, quando eu adquiri e comecei a reformar um apartamento maior. Fiz um acordo com a minha esposa de fazer um barzinho ou adega na sala. Seria um espaço para guardar bebidas e ter algo para oferecer aos amigos, irmãos de maçonaria e visitas. Foi assim quando fiz os móveis planejados.",
     "A partir daí comecei a adquirir algumas bebidas: gin, vodka, licores, bitters, cachaças e whisky. Me apaixonei pelo mundo do whisky, comecei a adquirir vários exemplares de diferentes marcas e me dediquei a estudar sobre o assunto.",
-    "Alguns canais do YouTube foram excelentes parceiros. Descobri o Rodrigo, da Jornada do Whisky (aquele do \"limpe a sua taça\"), depois o Tierri, do Tierri Whisky, em seguida o Patrick Goularte, do Porção dos Anjos. Estudei bastante, fiz cursos de degustação e, principalmente, estudei sobre a produção do whisky. Cheguei ao ponto de desenvolver o meu próprio blend.",
+    'Alguns canais do YouTube foram excelentes parceiros. Descobri o Rodrigo, da Jornada do Whisky (aquele do "limpe a sua taça"), depois o Tierri, do Tierri Whisky, em seguida o Patrick Goularte, do Porção dos Anjos. Estudei bastante, fiz cursos de degustação e, principalmente, estudei sobre a produção do whisky. Cheguei ao ponto de desenvolver o meu próprio blend.',
     "Por volta de janeiro ou fevereiro de 2024 eu descobri o mundo da cachaça e vi que o processo de fabricação era o mesmo do whisky. Mudava, lógico, a matéria-prima. O processo de envelhecimento também era igual ao do whisky, inclusive podendo usar os mesmos barris que se usam para envelhecer o whisky, e com a facilidade de que, no caso da cachaça, se pode usar a madeira brasileira, que tem uma diversidade de mais de 30 opções diferentes para se envelhecer a cachaça. Me apaixonei pelo universo da cachaça.",
     "Fato esse que me levou a escolher a cachaça como um presente para ofertar a alguns Grão-Mestres, ex-Grão-Mestres, irmãos e amigos durante a Assembleia Geral Ordinária da Confederação da Maçonaria Simbólica do Brasil, que ocorreria em julho de 2025 em Manaus-AM. Adentrei no segundo segmento da cachaça, que é o envelhecimento, a finalização e o envasamento. Não produzia a cachaça branca: comprava e colocava para envelhecer. Daí surgiu a cachaça, primeiramente em barril de carvalho americano, com um rótulo com a minha foto, próprio para um presente personalizado.",
     "Com a ideia de fazer essa cachaça para o encontro de Grão-Mestres da maçonaria em julho de 2025 em Manaus, Amazonas, em janeiro de 2024 eu comprei meu primeiro barril de 20 litros de carvalho americano e comecei a envelhecer cachaça até julho. Quando fui para Manaus, consegui produzir 60 garrafas. Fiz um rótulo com o meu rosto, o primeiro rótulo, e levei para dar de presente.",
@@ -96,31 +123,37 @@ export const story = {
   authorRole: "CEO da Dom Aldino",
 };
 
-export const heroSlides = [
+export type HeroSlide = {
+  title: string;
+  subtitle: string;
+  cta: string;
+  search?: { categoria: string };
+  image: Picture;
+  alt: string;
+};
+
+export const heroSlides: HeroSlide[] = [
   {
-    title: "Cachaça premium envelhecida em madeiras nobres",
-    subtitle: "Edição artesanal criada para quem valoriza origem, tempo e tradição brasileira.",
-    cta: "Conheça nossas cachaças",
-    href: "/loja",
+    title: "Cachaça envelhecida em oito madeiras",
+    subtitle:
+      "Carvalho francês, europeu e americano, amburana, bálsamo, jequitibá rosa, sassafrás e amendoim do campo, em barris de 20 a 200 litros.",
+    cta: "Ver as envelhecidas",
+    search: { categoria: "Envelhecidas" },
     image: sceneBarricaria,
+    alt: "Garrafa Dom Aldino numa caixa de madeira aberta, diante de barris com a marca",
   },
   {
-    title: "Garrafas âmbar com alma de alambique",
-    subtitle: "Notas douradas, textura macia e presença marcante para momentos especiais.",
-    cta: "Ver lançamentos",
-    href: "/loja?ordenar=novidades",
-    image: sceneCaixaDeMadeira,
-  },
-  {
-    title: "Kits para presente com acabamento nobre",
-    subtitle: "Seleções elegantes para celebrar, brindar e impressionar com autenticidade.",
-    cta: "Kits para presente",
-    href: "/loja?categoria=Presente",
+    title: "Presentes com a marca Dom Aldino",
+    subtitle:
+      "O Kit Experiência com dez frascos de 50ml, a garrafa na caixa de madeira ou a quadrada no saco de veludo.",
+    cta: "Ver presentes",
+    search: { categoria: "Presente" },
     image: sceneKitExperiencia,
+    alt: "Kit Experiência Dom Aldino com dez frascos numa caixa de MDF, sobre mesa de madeira",
   },
 ];
 
-export type Category = { name: string; image: string; description?: string };
+export type Category = { name: string; image: Picture };
 
 // "Todos" não filtra a loja; as demais correspondem a Product.category.
 export const ALL_CATEGORIES = "Todos";
@@ -134,6 +167,7 @@ export const categories: Category[] = [
 ];
 
 // Vitrine "Mais vendidos" da página inicial: marque até 3 produtos com `featured: true`.
+// Enquanto nenhum estiver marcado, a vitrine e a ordenação "Mais vendidos" ficam escondidas.
 export const FEATURED_LIMIT = 3;
 
 const INGREDIENTS = "Mosto fermentado de caldo de cana-de-açúcar";
@@ -194,7 +228,8 @@ export const products: Product[] = [
         "Aromas ricos e delicados, que incluem notas sutis de baunilha, toques florais, especiarias como cravo e canela, e uma certa cremosidade que lembra manteiga. Adicionalmente, é possível identificar nuances de frutas secas e um leve toque tostado, proveniente da tosta da madeira.",
       flavor:
         "Revela um paladar elegante e sofisticado. Os sabores são refinados, destacando-se a baunilha, caramelo, e um toque de frutas amarelas.",
-      finish: "A bebida apresenta uma textura sedosa, com um final ligeiramente adocicado e persistente.",
+      finish:
+        "A bebida apresenta uma textura sedosa, com um final ligeiramente adocicado e persistente.",
     },
     pairing:
       "A cachaça envelhecida em Carvalho Francês Virgem é versátil e se destaca em harmonizações gastronômicas. Combina bem com pratos finos, como pato assado com molho de frutas vermelhas, queijos de média maturação, e sobremesas cremosas, como crème brûlée.",
@@ -222,7 +257,8 @@ export const products: Product[] = [
     tasting: {
       aroma:
         "O carvalho europeu traz à cachaça nuances aromáticas sofisticadas. Entre elas, notas com toques sutis de frutas secas e, em alguns casos, um leve aroma tostado ou defumado. A complexidade aromática que essa madeira proporciona torna a cachaça uma experiência olfativa rica e envolvente.",
-      flavor: "O sabor é caracterizado por seu secor, elegância e traz uma textura sedosa, mais agradável ao paladar.",
+      flavor:
+        "O sabor é caracterizado por seu secor, elegância e traz uma textura sedosa, mais agradável ao paladar.",
     },
     pairing:
       "A cachaça armazenada em carvalho europeu é versátil quando se trata de harmonização. Combina muito bem com pratos mais refinados, como carnes vermelhas assadas, queijos curados e até mesmo chocolates de maior teor de cacau. Além disso, sua complexidade aromática e palativa também a torna uma excelente opção para ser degustada pura, após uma boa refeição.",
@@ -268,7 +304,8 @@ export const products: Product[] = [
       "O Bálsamo é uma madeira brasileira tradicionalmente usada no armazenamento de cachaça na região norte de Minas Gerais. A sua utilização remonta às origens da produção da cachaça, oferecendo uma identidade singular e autêntica à bebida.",
     ],
     tasting: {
-      aroma: "Notas de ervas frescas, eucalipto, anis e um toque balsâmico que remete a ambientes florestais e naturais.",
+      aroma:
+        "Notas de ervas frescas, eucalipto, anis e um toque balsâmico que remete a ambientes florestais e naturais.",
       flavor:
         "No paladar, a influência do Bálsamo é marcante e característica. A cachaça adquire um sabor refrescante com notas que remetem ao anis, com nuances herbáceas e uma ponta de amargor agradável. Esse perfil de sabor a torna única, diferente das cachaças envelhecidas em madeiras mais doces.",
     },
@@ -314,7 +351,7 @@ export const products: Product[] = [
     description: [
       "A cachaça envelhecida ou armazenada em barris de canela-sassafrás, uma madeira rara da Mata Atlântica, é uma bebida rara e muito aromática. A bebida apresenta um perfil sensorial exótico. A madeira transfere para o destilado notas adocicadas de canela, hortelã e cardamomo, deixando um final macio, refrescante e um visual amarelado brilhante.",
       "O sassafrás (Ocotea odorifera) é uma árvore nativa da Mata Atlântica. Quando utilizada para estagiar a cachaça (geralmente por um período de 1 a 2 anos), ela resulta em um destilado com propriedades muito singulares.",
-      "Na tradição e medicina popular: além do uso comercial na cachaça, o sassafrás possui um longo histórico de usos na medicina popular, sendo muito associado a propriedades depurativas, diuréticas e no tratamento de dores reumáticas. É comum encontrar \"garrafadas\" de cachaça com lascas de sassafrás feitas de forma artesanal.",
+      'Na tradição e medicina popular: além do uso comercial na cachaça, o sassafrás possui um longo histórico de usos na medicina popular, sendo muito associado a propriedades depurativas, diuréticas e no tratamento de dores reumáticas. É comum encontrar "garrafadas" de cachaça com lascas de sassafrás feitas de forma artesanal.',
     ],
     tasting: {
       aroma:
@@ -339,7 +376,7 @@ export const products: Product[] = [
       "A cachaça envelhecida ou armazenada em amendoim-do-campo (também conhecido como amendoim-bravo) é uma das mais valorizadas pelos apreciadores que buscam preservar a identidade sensorial da cana-de-açúcar.",
     description: [
       "A cachaça envelhecida ou armazenada em amendoim-do-campo (também conhecido como amendoim-bravo) é uma das mais valorizadas pelos apreciadores que buscam preservar a identidade sensorial da cana-de-açúcar.",
-      "Diferente de madeiras intensas como o carvalho ou a amburana, o amendoim é uma madeira nobre brasileira considerada \"neutra\" ou \"discreta\". Ela reduz a acidez e traz maciez à bebida sem transformar radicalmente o seu sabor original.",
+      'Diferente de madeiras intensas como o carvalho ou a amburana, o amendoim é uma madeira nobre brasileira considerada "neutra" ou "discreta". Ela reduz a acidez e traz maciez à bebida sem transformar radicalmente o seu sabor original.',
       "Cor: Geralmente mantém a cachaça límpida e transparente (cachaça prata ou clássica). Se passar muito tempo em barris pequenos e novos, pode adquirir um tom amarelo bem claro e suave.",
       "Consumo: Excelente para ser degustada pura, preferencialmente gelada.",
     ],
@@ -371,7 +408,7 @@ export const products: Product[] = [
       "Jequitibá Rosa: preserva o sabor da cana e reduz a acidez.",
       "Amendoim: confere maciez e um toque levemente frutado/amendoado.",
       "Sassafrás: entrega aroma exótico, picante e cor levemente avermelhada.",
-      "Por que essa combinação funciona? Equilíbrio de doçura: a Amburana adoça enquanto o Bálsamo \"quebra\" o excesso com seu toque seco. Textura: o Amendoim e o Jequitibá Rosa garantem uma bebida aveludada, sem queimar a garganta. Aroma único: o Sassafrás atua como um \"tempero\" final, dando uma identidade olfativa rara.",
+      'Por que essa combinação funciona? Equilíbrio de doçura: a Amburana adoça enquanto o Bálsamo "quebra" o excesso com seu toque seco. Textura: o Amendoim e o Jequitibá Rosa garantem uma bebida aveludada, sem queimar a garganta. Aroma único: o Sassafrás atua como um "tempero" final, dando uma identidade olfativa rara.',
     ],
     specs: specs("Amburana, Bálsamo, Jequitibá Rosa, Amendoim e Sassafrás", "750ml"),
   },
@@ -396,7 +433,8 @@ export const products: Product[] = [
     tasting: {
       finish: "Cor amarela-âmbar, textura macia e final persistente.",
     },
-    pairing: "Harmonização perfeita com sobremesas à base de chocolate, carnes nobres e queijos curados.",
+    pairing:
+      "Harmonização perfeita com sobremesas à base de chocolate, carnes nobres e queijos curados.",
     specs: [
       ["Madeira", "Carvalho Americano, Francês e Europeu"],
       ["Volume", "750ml"],
@@ -424,7 +462,8 @@ export const products: Product[] = [
     ],
     tasting: {
       aroma: "Rico em baunilha, coco, chocolate, amêndoas, frutas vermelhas e especiarias doces.",
-      flavor: "Equilibrado, suave aveludado, com um mix de notas doces do carvalho e exóticas das madeiras brasileiras.",
+      flavor:
+        "Equilibrado, suave aveludado, com um mix de notas doces do carvalho e exóticas das madeiras brasileiras.",
       finish: "Longa e persistente, com camadas de sabor que evoluem a cada gole.",
     },
     specs: [
@@ -523,9 +562,9 @@ export const products: Product[] = [
     price: 75,
     image: prataInNatura,
     summary:
-      "Nosso rótulo prata, não envelhecida em barris de madeira, traz a pureza da cachaça de Alambique, branquinha e pura, \"in natura\".",
+      'Nosso rótulo prata, não envelhecida em barris de madeira, traz a pureza da cachaça de Alambique, branquinha e pura, "in natura".',
     description: [
-      "Nosso rótulo prata, não envelhecida em barris de madeira, traz a pureza da cachaça de Alambique, branquinha e pura, \"in natura\".",
+      'Nosso rótulo prata, não envelhecida em barris de madeira, traz a pureza da cachaça de Alambique, branquinha e pura, "in natura".',
       "Descansa durante 3 anos em tanques de aço inoxidável. Isso garante ainda mais maciez e suavidade ao paladar. O uso de tanques de inox para o armazenamento de cachaça é uma prática mais moderna que preserva a pureza original da cachaça, garantindo uma bebida que reflete o sabor obtido em todo o processo de produção.",
     ],
     tasting: {
@@ -551,6 +590,22 @@ export function formatCurrency(value: number) {
 
 export function getProduct(slug: string) {
   return products.find((product) => product.slug === slug);
+}
+
+export function searchProducts(query: string) {
+  const normalize = (text: string) =>
+    text
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
+  const terms = normalize(query).split(/\s+/).filter(Boolean);
+  if (terms.length === 0) return [];
+  return products.filter((product) => {
+    const haystack = normalize(
+      [product.name, product.category, product.wood, product.volume].join(" "),
+    );
+    return terms.every((term) => haystack.includes(term));
+  });
 }
 
 export function whatsappCheckoutUrl(items: CartItem[]) {

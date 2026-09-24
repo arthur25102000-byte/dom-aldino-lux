@@ -8,7 +8,8 @@ export const Route = createFileRoute("/categorias")({
       { title: "Categorias – Dom Aldino" },
       {
         name: "description",
-        content: "Explore cachaças Dom Aldino por categoria: Envelhecidas, Blend, Presente e Prata.",
+        content:
+          "Explore cachaças Dom Aldino por categoria: Envelhecidas, Blend, Presente e Prata.",
       },
       { property: "og:title", content: "Categorias – Dom Aldino" },
       {
@@ -24,10 +25,10 @@ export const Route = createFileRoute("/categorias")({
 
 function CategoriesPage() {
   return (
-    <div className="bg-brand-black pt-36">
+    <div className="bg-brand-black pt-32">
       <section className="mx-auto max-w-7xl px-4 pb-20 sm:px-6">
         <SectionTitle
-          eyebrow="Categorias"
+          as="h1"
           title="Nossa coleção"
           text="Envelhecidas em madeiras nobres, blends autorais, a pureza da prata e opções especiais para presentear."
         />

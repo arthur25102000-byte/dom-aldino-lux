@@ -1,24 +1,50 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { Link, createFileRoute } from "@tanstack/react-router";
+import { useMemo } from "react";
 
-import { ALL_CATEGORIES, ProductCard, SectionTitle, ShopFilters, products } from "@/components/dom-aldino";
+import {
+  ALL_CATEGORIES,
+  ProductCard,
+  SectionTitle,
+  categories,
+  products,
+} from "@/components/dom-aldino";
+import { cn } from "@/lib/utils";
+
+type ShopSearch = {
+  categoria?: string | undefined;
+  madeira?: string | undefined;
+  ordenar?: string | undefined;
+};
+
+const SORTS = [
+  ["recomendados", "Recomendados"],
+  ["menor-preco", "Menor preço"],
+  ["maior-preco", "Maior preço"],
+] as const;
+type Sort = (typeof SORTS)[number][0];
+
+const text = (value: unknown) => (typeof value === "string" && value.trim() ? value : undefined);
 
 export const Route = createFileRoute("/loja")({
-  validateSearch: (search: Record<string, unknown>): { categoria?: string; ordenar?: string } => ({
-    categoria: typeof search["categoria"] === "string" ? search["categoria"] : ALL_CATEGORIES,
-    ordenar: typeof search["ordenar"] === "string" ? search["ordenar"] : "Mais vendidos",
+  // Os filtros vivem no endereço: o link filtrado pode ser compartilhado e o menu "Loja" limpa tudo.
+  validateSearch: (search: Record<string, unknown>): ShopSearch => ({
+    categoria: text(search["categoria"]),
+    madeira: text(search["madeira"]),
+    ordenar: text(search["ordenar"]),
   }),
   head: () => ({
     meta: [
       { title: "Loja – Dom Aldino Cachaça Premium" },
       {
         name: "description",
-        content: "Compre cachaças premium Dom Aldino por categoria, madeira, preço e lançamentos.",
+        content:
+          "Compre cachaças Dom Aldino envelhecidas em oito madeiras, blends, prata e kits para presente.",
       },
       { property: "og:title", content: "Loja – Dom Aldino Cachaça Premium" },
       {
         property: "og:description",
-        content: "Rótulos artesanais, kits para presente e cachaças envelhecidas em madeiras nobres.",
+        content:
+          "Rótulos artesanais, kits para presente e cachaças envelhecidas em madeiras nobres.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -29,50 +55,136 @@ export const Route = createFileRoute("/loja")({
 
 function ShopPage() {
   const search = Route.useSearch();
-  const [selectedCategory, setSelectedCategory] = useState(search.categoria ?? ALL_CATEGORIES);
-  const [selectedWood, setSelectedWood] = useState("Todas");
-  const [sort, setSort] = useState(search.ordenar === "novidades" ? "Novidades" : search.ordenar ?? "Mais vendidos");
+  const navigate = Route.useNavigate();
+  const category = categories.some((item) => item.name === search.categoria)
+    ? search.categoria!
+    : ALL_CATEGORIES;
+  const sort: Sort = SORTS.some(([value]) => value === search.ordenar)
+    ? (search.ordenar as Sort)
+    : "recomendados";
 
-  const filteredProducts = useMemo(() => {
-    const list = products
-      .filter((product) => selectedCategory === ALL_CATEGORIES || product.category === selectedCategory)
-      .filter((product) => selectedWood === "Todas" || product.wood === selectedWood);
+  const inCategory = useMemo(
+    () =>
+      products.filter((product) => category === ALL_CATEGORIES || product.category === category),
+    [category],
+  );
+  // O filtro de madeira só faz sentido entre as envelhecidas, onde cada rótulo tem uma madeira.
+  const woods = category === "Envelhecidas" ? inCategory.map((product) => product.wood) : [];
+  const wood = search.madeira && woods.includes(search.madeira) ? search.madeira : undefined;
 
-    return [...list].sort((a, b) => {
-      if (sort === "Menor preço") return a.price - b.price;
-      if (sort === "Maior preço") return b.price - a.price;
-      if (sort === "Novidades") return Number(Boolean(b.launch)) - Number(Boolean(a.launch));
-      return Number(Boolean(b.featured)) - Number(Boolean(a.featured));
-    });
-  }, [selectedCategory, selectedWood, sort]);
+  const list = useMemo(() => {
+    const filtered = inCategory.filter((product) => !wood || product.wood === wood);
+    if (sort === "menor-preco") return [...filtered].sort((a, b) => a.price - b.price);
+    if (sort === "maior-preco") return [...filtered].sort((a, b) => b.price - a.price);
+    return filtered;
+  }, [inCategory, wood, sort]);
+
+  const update = (next: Partial<ShopSearch>) =>
+    navigate({ search: (prev) => ({ ...prev, ...next }), replace: true, resetScroll: false });
+
+  const select =
+    "min-h-11 rounded border border-brand-gold/25 bg-brand-black px-3 text-sm text-brand-beige hover:border-brand-gold/60 focus-visible:border-brand-gold";
 
   return (
-    <div className="bg-brand-black pt-36">
-      <section className="mx-auto max-w-7xl px-4 pb-16 sm:px-6">
+    <div className="bg-brand-black pt-32">
+      <section className="mx-auto max-w-7xl px-4 pb-20 sm:px-6">
         <SectionTitle
-          eyebrow="Loja"
-          title="Cachaças Dom Aldino"
-          text="Filtros rápidos para encontrar o rótulo ideal por madeira, estilo e ocasião."
+          as="h1"
+          title="Nossas cachaças"
+          text="Envelhecidas em oito madeiras, blends, a prata e opções para presente."
         />
-        <div className="grid gap-8 lg:grid-cols-[280px_1fr]">
-          <ShopFilters
-            selectedCategory={selectedCategory}
-            onCategoryChange={setSelectedCategory}
-            selectedWood={selectedWood}
-            onWoodChange={setSelectedWood}
-            sort={sort}
-            onSortChange={setSort}
-          />
-          <div>
-            <div className="mb-5 flex items-center justify-between border-b border-brand-gold/15 pb-4 text-sm text-brand-beige/70">
-              <span>{filteredProducts.length} produtos encontrados</span>
-              <span className="hidden uppercase tracking-[0.22em] text-brand-gold sm:inline">{selectedCategory}</span>
-            </div>
-            <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-              {filteredProducts.map((product) => <ProductCard key={product.slug} product={product} />)}
-            </div>
+
+        <nav aria-label="Categorias" className="-mx-4 sm:mx-0">
+          <ul className="no-scrollbar flex gap-2 overflow-x-auto px-4 pb-1 sm:flex-wrap sm:justify-center sm:px-0">
+            {categories.map((item) => {
+              const current = item.name === category;
+              return (
+                <li key={item.name} className="shrink-0">
+                  <Link
+                    to="/loja"
+                    search={item.name === ALL_CATEGORIES ? {} : { categoria: item.name }}
+                    replace
+                    resetScroll={false}
+                    aria-current={current ? "page" : undefined}
+                    className={cn(
+                      "press inline-flex min-h-11 items-center rounded-full border px-5 text-sm transition-colors",
+                      current
+                        ? "border-brand-gold bg-brand-gold text-brand-black"
+                        : "border-brand-gold/25 text-brand-beige hover:border-brand-gold hover:text-brand-gold",
+                    )}
+                  >
+                    {item.name === ALL_CATEGORIES ? "Todas" : item.name}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+
+        <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-b border-brand-gold/15 pb-4">
+          <p className="text-sm text-subtle" aria-live="polite">
+            {list.length} {list.length === 1 ? "produto" : "produtos"}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {woods.length ? (
+              <label className="flex items-center gap-2 text-sm text-subtle">
+                <span className="sr-only sm:not-sr-only">Madeira</span>
+                <select
+                  className={select}
+                  value={wood ?? ""}
+                  onChange={(event) => update({ madeira: event.target.value || undefined })}
+                >
+                  <option value="">Todas as madeiras</option>
+                  {woods.map((item) => (
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+            <label className="flex items-center gap-2 text-sm text-subtle">
+              <span className="sr-only sm:not-sr-only">Ordenar</span>
+              <select
+                className={select}
+                value={sort}
+                onChange={(event) =>
+                  update({
+                    ordenar: event.target.value === "recomendados" ? undefined : event.target.value,
+                  })
+                }
+              >
+                {SORTS.map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
         </div>
+
+        {list.length ? (
+          <ul className="mt-6 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
+            {list.map((product, index) => (
+              <li key={product.slug}>
+                <ProductCard product={product} priority={index < 2} />
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="mt-16 text-center">
+            <p className="font-display text-2xl text-brand-beige">
+              Nenhuma cachaça com esses filtros.
+            </p>
+            <Link
+              to="/loja"
+              className="mt-4 inline-flex min-h-11 items-center text-brand-gold underline underline-offset-4"
+            >
+              Ver todas as cachaças
+            </Link>
+          </div>
+        )}
       </section>
     </div>
   );
