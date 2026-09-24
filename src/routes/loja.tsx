@@ -83,7 +83,7 @@ function ShopPage() {
     navigate({ search: (prev) => ({ ...prev, ...next }), replace: true, resetScroll: false });
 
   const select =
-    "min-h-11 rounded border border-brand-gold/25 bg-brand-black px-3 text-sm text-brand-beige hover:border-brand-gold/60 focus-visible:border-brand-gold";
+    "min-h-11 rounded border border-line-strong bg-brand-black px-3 text-sm text-brand-beige hover:border-line-accent focus-visible:border-brand-gold";
 
   return (
     <div className="bg-brand-black pt-32">
@@ -110,7 +110,7 @@ function ShopPage() {
                       "press inline-flex min-h-11 items-center rounded-full border px-5 text-sm transition-colors",
                       current
                         ? "border-brand-gold bg-brand-gold text-brand-black"
-                        : "border-brand-gold/25 text-brand-beige hover:border-brand-gold hover:text-brand-gold",
+                        : "border-line-strong text-brand-beige hover:border-brand-gold hover:text-brand-gold",
                     )}
                   >
                     {item.name === ALL_CATEGORIES ? "Todas" : item.name}
@@ -121,7 +121,7 @@ function ShopPage() {
           </ul>
         </nav>
 
-        <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-b border-brand-gold/15 pb-4">
+        <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4">
           <p className="text-sm text-subtle" aria-live="polite">
             {list.length} {list.length === 1 ? "produto" : "produtos"}
           </p>
@@ -164,6 +164,7 @@ function ShopPage() {
           </div>
         </div>
 
+        <h2 className="sr-only">Produtos</h2>
         {list.length ? (
           <ul className="mt-6 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
             {list.map((product, index) => (

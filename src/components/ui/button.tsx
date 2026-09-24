@@ -13,7 +13,7 @@ const buttonVariants = cva(
           "bg-primary text-primary-foreground text-xs font-semibold uppercase tracking-label hover:bg-brand-gold-soft",
         destructive: "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
         outline:
-          "border border-brand-gold/50 bg-transparent text-brand-gold text-xs font-semibold uppercase tracking-label hover:border-brand-gold hover:bg-brand-gold/10",
+          "border border-line-accent bg-transparent text-brand-gold text-xs font-semibold uppercase tracking-label hover:border-brand-gold hover:bg-brand-gold/10",
         secondary: "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
         ghost: "text-brand-gold hover:bg-brand-wood",
         link: "text-primary underline-offset-4 hover:underline",

@@ -85,7 +85,7 @@ function ProductPage() {
           </ol>
         </nav>
         <div className="mt-4 grid grid-cols-1 gap-10 lg:grid-cols-[1fr_0.95fr] lg:items-start lg:gap-14">
-          <div className="overflow-hidden border border-brand-gold/20 bg-card lg:sticky lg:top-32">
+          <div className="overflow-hidden border border-line bg-card lg:sticky lg:top-32">
             <Photo
               picture={product.image}
               alt={`Garrafa ${product.name} Dom Aldino`}
@@ -147,7 +147,7 @@ function ProductPage() {
         </div>
       </section>
       {/* Barra de compra fixa no celular: preço e ação sempre ao alcance do polegar. */}
-      <div className="glass fixed inset-x-0 bottom-0 z-40 border-t border-brand-gold/20 bg-brand-black/90 px-4 py-3 backdrop-blur-md lg:hidden">
+      <div className="glass fixed inset-x-0 bottom-0 z-40 border-t border-line bg-brand-black/90 px-4 py-3 backdrop-blur-md lg:hidden">
         <div className="mx-auto flex max-w-xl items-center gap-4">
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm text-subtle">{product.name}</p>

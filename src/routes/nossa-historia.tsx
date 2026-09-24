@@ -32,7 +32,7 @@ function StoryPage() {
     <div className="bg-brand-black pt-32">
       <article className="mx-auto max-w-5xl px-4 pb-20 sm:px-6">
         <SectionTitle as="h1" title="Nossa história" />
-        <figure className="overflow-hidden border border-brand-gold/20">
+        <figure className="overflow-hidden border border-line">
           <Photo
             picture={story.image}
             alt="Garrafa Dom Aldino Barril de Carvalho e copo sobre a mesa, diante de barris da marca e alambiques de cobre"
@@ -51,7 +51,7 @@ function StoryPage() {
             ))}
           </div>
           {closing ? (
-            <p className="mt-10 border-y border-brand-gold/20 py-8 text-center font-display text-2xl italic leading-snug text-brand-gold">
+            <p className="mt-10 border-y border-line py-8 text-center font-display text-2xl italic leading-snug text-brand-gold">
               {closing}
             </p>
           ) : null}

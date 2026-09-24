@@ -49,10 +49,7 @@ function ContactPage() {
         />
         <div className="grid gap-5 md:grid-cols-2">
           {units.map((unit) => (
-            <div
-              key={unit.phone}
-              className="flex flex-col border border-brand-gold/20 bg-card p-7 sm:p-9"
-            >
+            <div key={unit.phone} className="flex flex-col border border-line bg-card p-7 sm:p-9">
               <p className="text-xs font-medium uppercase tracking-caps text-subtle">
                 {unit.label}
               </p>
@@ -66,7 +63,7 @@ function ContactPage() {
             </div>
           ))}
         </div>
-        <div className="mt-14 grid gap-10 border-t border-brand-gold/15 pt-10 md:grid-cols-3">
+        <div className="mt-14 grid gap-10 border-t border-line pt-10 md:grid-cols-3">
           <div>
             <h2 className="text-xs font-semibold uppercase tracking-caps text-brand-gold">
               Outros canais

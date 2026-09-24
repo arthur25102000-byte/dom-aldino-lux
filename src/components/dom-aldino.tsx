@@ -18,6 +18,7 @@ import {
   Trash2,
   Truck,
   Wine,
+  X,
 } from "lucide-react";
 import {
   createContext,
@@ -264,7 +265,7 @@ function AgeGate() {
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="glass fixed inset-0 z-[80] bg-brand-black/90 backdrop-blur-md" />
         <DialogPrimitive.Content
-          className="fixed left-1/2 top-1/2 z-[81] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 border border-brand-gold/40 bg-brand-black px-6 py-10 text-center shadow-[0_24px_80px_-24px_rgb(0_0_0/0.9)] outline-none sm:px-10"
+          className="fixed left-1/2 top-1/2 z-[81] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 border border-line-strong bg-brand-black px-6 py-10 text-center shadow-[0_24px_80px_-24px_rgb(0_0_0/0.9)] outline-none sm:px-10"
           onEscapeKeyDown={(event) => event.preventDefault()}
           onPointerDownOutside={(event) => event.preventDefault()}
           onInteractOutside={(event) => event.preventDefault()}
@@ -336,7 +337,7 @@ function SiteHeader({ onOpenCart }: { onOpenCart: () => void }) {
   const { count } = useCart();
 
   return (
-    <header className="glass fixed inset-x-0 top-0 z-50 border-b border-brand-gold/15 bg-brand-black/85 backdrop-blur-md">
+    <header className="glass fixed inset-x-0 top-0 z-50 border-b border-line bg-brand-black/85 backdrop-blur-md">
       <div className="bg-brand-wood">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-1.5 text-[0.7rem] uppercase tracking-caps text-brand-beige sm:px-6">
           <span className="flex items-center gap-2">
@@ -407,7 +408,7 @@ function SiteHeader({ onOpenCart }: { onOpenCart: () => void }) {
             </SheetTrigger>
             <SheetContent
               side="right"
-              className="w-[85%] border-brand-gold/25 bg-brand-black text-brand-beige sm:max-w-sm"
+              className="w-[85%] border-line-strong bg-brand-black text-brand-beige sm:max-w-sm"
             >
               <SheetHeader className="text-left">
                 <SheetTitle className="font-display text-2xl text-brand-gold">Menu</SheetTitle>
@@ -419,7 +420,7 @@ function SiteHeader({ onOpenCart }: { onOpenCart: () => void }) {
                     <Link
                       to={to}
                       activeOptions={{ exact: to === "/" }}
-                      className="border-b border-brand-gold/15 py-4 font-display text-xl text-brand-beige transition-colors hover:text-brand-gold data-[status=active]:text-brand-gold"
+                      className="border-b border-line py-4 font-display text-xl text-brand-beige transition-colors hover:text-brand-gold data-[status=active]:text-brand-gold"
                     >
                       {label}
                     </Link>
@@ -466,7 +467,7 @@ function SearchPanel() {
           event.preventDefault();
           inputRef.current?.focus();
         }}
-        className="max-h-[85dvh] overflow-y-auto border-brand-gold/25 bg-brand-black px-4 pb-8 pt-6 text-brand-beige sm:px-6"
+        className="max-h-[85dvh] overflow-y-auto border-line-strong bg-brand-black px-4 pb-8 pt-6 text-brand-beige sm:px-6"
       >
         <div className="mx-auto max-w-3xl">
           <SheetHeader className="text-left">
@@ -491,8 +492,21 @@ function SearchPanel() {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Ex.: carvalho francês, amburana, kit"
-              className="min-h-13 w-full rounded border border-brand-gold/35 bg-brand-smoke pl-12 pr-4 text-base text-brand-beige placeholder:text-subtle focus-visible:border-brand-gold"
+              className="min-h-13 w-full appearance-none rounded border border-line-strong bg-brand-smoke pl-12 pr-14 text-base text-brand-beige placeholder:text-subtle focus-visible:border-brand-gold [&::-webkit-search-cancel-button]:appearance-none"
             />
+            {query ? (
+              <button
+                type="button"
+                className="press absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded text-subtle hover:text-brand-gold"
+                aria-label="Limpar busca"
+                onClick={() => {
+                  setQuery("");
+                  inputRef.current?.focus();
+                }}
+              >
+                <X className="h-5 w-5" aria-hidden="true" />
+              </button>
+            ) : null}
           </div>
           {query.trim() === "" ? (
             <div className="mt-5 flex flex-wrap items-center gap-2 text-sm text-subtle">
@@ -501,7 +515,7 @@ function SearchPanel() {
                 <button
                   key={term}
                   type="button"
-                  className="press min-h-11 rounded border border-brand-gold/25 px-4 text-brand-beige hover:border-brand-gold hover:text-brand-gold"
+                  className="press min-h-11 rounded border border-line-strong px-4 text-brand-beige hover:border-brand-gold hover:text-brand-gold"
                   onClick={() => setQuery(term)}
                 >
                   {term}
@@ -522,7 +536,7 @@ function SearchPanel() {
                       <Link
                         to="/produto/$slug"
                         params={{ slug: product.slug }}
-                        className="flex items-center gap-4 rounded border border-transparent p-2 transition-colors hover:border-brand-gold/30 hover:bg-brand-wood/60"
+                        className="flex items-center gap-4 rounded border border-transparent p-2 transition-colors hover:border-line-strong hover:bg-brand-wood/60"
                       >
                         <Photo
                           picture={product.image}
@@ -565,9 +579,9 @@ function CartDrawer({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="flex w-full flex-col border-brand-gold/25 bg-brand-black p-0 text-brand-beige sm:max-w-md"
+        className="flex w-full flex-col border-line-strong bg-brand-black p-0 text-brand-beige sm:max-w-md"
       >
-        <SheetHeader className="border-b border-brand-gold/15 px-6 pb-5 pt-6 text-left">
+        <SheetHeader className="border-b border-line px-6 pb-5 pt-6 text-left">
           <SheetTitle className="font-display text-2xl text-brand-gold">Carrinho</SheetTitle>
           <SheetDescription className="text-sm text-subtle">
             O pedido é finalizado pelo WhatsApp.
@@ -592,7 +606,7 @@ function CartDrawer({
               {items.map((item) => (
                 <li
                   key={item.slug}
-                  className="grid grid-cols-[64px_1fr] gap-4 border-b border-brand-gold/10 pb-5"
+                  className="grid grid-cols-[64px_1fr] gap-4 border-b border-line pb-5"
                 >
                   <Photo
                     picture={item.image}
@@ -633,7 +647,7 @@ function CartDrawer({
                 </li>
               ))}
             </ul>
-            <div className="border-t border-brand-gold/20 px-6 pb-6 pt-5">
+            <div className="border-t border-line px-6 pb-6 pt-5">
               <div className="flex items-baseline justify-between">
                 <span className="text-body">Subtotal</span>
                 <strong className="tabular font-display text-2xl text-brand-gold">
@@ -665,7 +679,7 @@ function CartToast({ toast, onOpenCart }: { toast: Toast | null; onOpenCart: () 
       {toast ? (
         <div
           key={toast.id}
-          className="hero-in pointer-events-auto flex w-full max-w-md items-center gap-4 border border-brand-gold/40 bg-brand-smoke py-2 pl-5 pr-2 shadow-[0_18px_50px_-18px_rgb(0_0_0/0.9)]"
+          className="hero-in pointer-events-auto flex w-full max-w-md items-center gap-4 border border-line-strong bg-brand-smoke py-2 pl-5 pr-2 shadow-[0_18px_50px_-18px_rgb(0_0_0/0.9)]"
         >
           <p className="min-w-0 flex-1 text-sm text-brand-beige">
             <span className="text-brand-gold">{toast.name}</span>
@@ -927,7 +941,7 @@ export function CategoryGrid() {
             search={category.name === ALL_CATEGORIES ? {} : { categoria: category.name }}
             className="group block rounded-t-full text-center"
           >
-            <div className="aspect-[4/5] overflow-hidden rounded-t-full border border-brand-gold/40 bg-brand-wood p-1.5 transition-colors duration-300 group-hover:border-brand-gold">
+            <div className="aspect-[4/5] overflow-hidden rounded-t-full border border-line-strong bg-brand-wood p-1.5 transition-colors duration-300 group-hover:border-brand-gold">
               <Photo
                 picture={category.image}
                 alt=""
@@ -981,7 +995,7 @@ export function ProductCard({
 }) {
   const { addItem } = useCart();
   return (
-    <article className="group flex h-full flex-col border border-brand-gold/15 bg-card transition-colors duration-300 hover:border-brand-gold/60">
+    <article className="group flex h-full flex-col border border-line bg-card transition-colors duration-300 hover:border-line-accent">
       <Link
         to="/produto/$slug"
         params={{ slug: product.slug }}
@@ -1051,10 +1065,7 @@ export function Differentials() {
     [MessageCircle, "Atendimento pelo WhatsApp"],
   ];
   return (
-    <section
-      aria-label="Diferenciais"
-      className="border-y border-brand-gold/15 bg-brand-wood/70 py-8"
-    >
+    <section aria-label="Diferenciais" className="border-y border-line bg-brand-wood/70 py-8">
       <ul className="mx-auto grid max-w-7xl grid-cols-2 gap-x-6 gap-y-6 px-4 sm:px-6 lg:grid-cols-4">
         {items.map(([Icon, label]) => (
           <li key={label} className="flex items-center gap-3">
@@ -1080,7 +1091,7 @@ export function StorySection() {
       className="bg-brand-black pb-20 pt-8 sm:pb-28 sm:pt-12"
     >
       <div className="mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-[1fr_1.05fr] lg:items-stretch lg:gap-16">
-        <figure className="relative min-h-[360px] overflow-hidden border border-brand-gold/20">
+        <figure className="relative min-h-[360px] overflow-hidden border border-line">
           <Photo
             picture={story.image}
             alt="Garrafa Dom Aldino Barril de Carvalho e copo sobre a mesa, diante de barris da marca e alambiques de cobre"
@@ -1123,7 +1134,7 @@ export function FollowUs() {
   return (
     <section
       aria-labelledby="acompanhe-titulo"
-      className="border-y border-brand-gold/15 bg-brand-wood py-16"
+      className="border-y border-line bg-brand-wood py-16"
     >
       <div className="mx-auto max-w-2xl px-4 text-center sm:px-6">
         <h2
@@ -1188,7 +1199,7 @@ function SiteFooter() {
           </h2>
           <ul className="mt-4 flex flex-wrap gap-2 text-sm text-body">
             {brand.payments.map((item) => (
-              <li key={item} className="border border-brand-gold/20 px-3 py-1.5">
+              <li key={item} className="border border-line px-3 py-1.5">
                 {item}
               </li>
             ))}
@@ -1249,18 +1260,20 @@ function FloatingWhatsApp() {
     select: (state) => state.location.pathname.startsWith("/produto/"),
   });
   return (
-    <a
-      href={`https://wa.me/${brand.whatsapp}`}
-      target="_blank"
-      rel="noreferrer"
-      aria-label="Conversar com a Dom Aldino no WhatsApp"
-      className={cn(
-        "press fixed bottom-5 right-4 z-40 h-13 w-13 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_10px_30px_-8px_rgb(0_0_0/0.8)] hover:bg-brand-gold-soft sm:right-6",
-        onProductPage ? "hidden lg:flex" : "flex",
-      )}
-    >
-      <MessageCircle className="h-6 w-6" aria-hidden="true" />
-    </a>
+    <aside aria-label="Atendimento">
+      <a
+        href={`https://wa.me/${brand.whatsapp}`}
+        target="_blank"
+        rel="noreferrer"
+        aria-label="Conversar com a Dom Aldino no WhatsApp"
+        className={cn(
+          "press fixed bottom-5 right-4 z-40 h-13 w-13 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_10px_30px_-8px_rgb(0_0_0/0.8)] hover:bg-brand-gold-soft sm:right-6",
+          onProductPage ? "hidden lg:flex" : "flex",
+        )}
+      >
+        <MessageCircle className="h-6 w-6" aria-hidden="true" />
+      </a>
+    </aside>
   );
 }
 
@@ -1277,7 +1290,7 @@ export function QuantityControl({
     <div
       role="group"
       aria-label={label ? `Quantidade de ${label}` : "Quantidade"}
-      className="inline-flex items-center border border-brand-gold/30"
+      className="inline-flex items-center border border-line-strong"
     >
       <Button
         type="button"
@@ -1319,10 +1332,10 @@ export function ProductTabs({ product }: { product: Product }) {
     ...(product.pairing ? [["harmonizacao", "Harmonização"] as [string, string]] : []),
     ["ficha", "Ficha técnica"],
   ];
-  const panel = "mt-0 border border-t-0 border-brand-gold/15 bg-brand-black/50 p-6 text-body";
+  const panel = "mt-0 border border-t-0 border-line bg-brand-black/50 p-6 text-body";
   return (
     <Tabs defaultValue="descricao" className="mt-12">
-      <TabsList className="no-scrollbar flex h-auto w-full justify-start overflow-x-auto rounded-none border-b border-brand-gold/25 bg-transparent p-0">
+      <TabsList className="no-scrollbar flex h-auto w-full justify-start overflow-x-auto rounded-none border-b border-line-strong bg-transparent p-0">
         {tabs.map(([value, label]) => (
           <TabsTrigger
             key={value}
@@ -1358,10 +1371,7 @@ export function ProductTabs({ product }: { product: Product }) {
       <TabsContent value="ficha" className={panel}>
         <dl className="grid gap-x-8 sm:grid-cols-2">
           {product.specs.map(([key, value]) => (
-            <div
-              key={key}
-              className="flex justify-between gap-4 border-b border-brand-gold/10 py-3"
-            >
+            <div key={key} className="flex justify-between gap-4 border-b border-line py-3">
               <dt className="text-subtle">{key}</dt>
               <dd className="text-right font-medium text-brand-beige">{value}</dd>
             </div>

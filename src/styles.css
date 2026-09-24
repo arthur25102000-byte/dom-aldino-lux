@@ -1,6 +1,11 @@
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
+/* Fontes hospedadas no próprio site (sem depender do Google Fonts). */
+@import "@fontsource-variable/jost";
+@import "@fontsource/playfair-display/latin-600.css";
+@import "@fontsource/playfair-display/latin-700.css";
+@import "@fontsource/playfair-display/latin-600-italic.css";
 
 /*
  * Design system definition.
@@ -18,7 +23,7 @@
 
 @theme inline {
   --font-display: "Playfair Display", Georgia, serif;
-  --font-sans: "Jost", "Segoe UI", system-ui, sans-serif;
+  --font-sans: "Jost Variable", "Segoe UI", system-ui, sans-serif;
   /* Espaçamento de letras: rótulos em caixa alta e títulos grandes. */
   --tracking-label: 0.16em;
   --tracking-caps: 0.26em;
@@ -74,6 +79,10 @@
   /* Papéis de texto: corpo (leitura) e sutil (metadados). */
   --color-body: var(--text-body);
   --color-subtle: var(--text-subtle);
+  /* Bordas douradas: divisória, contorno de controle e destaque (hover). */
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-line-accent: var(--line-accent);
 }
 
 :root {
@@ -87,6 +96,9 @@
   --brand-smoke: oklch(0.23 0.014 75);
   --text-body: oklch(0.8968 0.0395 87.57 / 82%);
   --text-subtle: oklch(0.8968 0.0395 87.57 / 64%);
+  --line: oklch(0.7665 0.1387 91.06 / 16%);
+  --line-strong: oklch(0.7665 0.1387 91.06 / 32%);
+  --line-accent: oklch(0.7665 0.1387 91.06 / 55%);
   --background: var(--brand-black);
   --foreground: var(--brand-beige);
   --card: var(--brand-wood);

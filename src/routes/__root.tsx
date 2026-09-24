@@ -7,37 +7,40 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { type ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { DomAldinoShell } from "@/components/dom-aldino";
+import jostLatin from "@fontsource-variable/jost/files/jost-latin-wght-normal.woff2?url";
 import appCss from "../styles.css?url";
 
+// A 404 é exibida dentro do Outlet, que já está no DomAldinoShell do RootComponent.
 function NotFoundComponent() {
+  useEffect(() => {
+    document.title = "Página não encontrada – Dom Aldino";
+  }, []);
   return (
-    <DomAldinoShell>
-      <div className="flex min-h-screen items-center justify-center bg-background px-4 pt-28">
-        <div className="max-w-md text-center">
-          <p className="font-display text-7xl font-bold gold-emboss" aria-hidden="true">
-            404
-          </p>
-          <h1 className="mt-4 font-display text-3xl text-brand-beige">
-            Esta página não foi encontrada
-          </h1>
-          <p className="mt-3 text-body">
-            O endereço pode ter mudado ou não existir na loja Dom Aldino.
-          </p>
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Button asChild>
-              <Link to="/loja">Ver a loja</Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link to="/">Voltar ao início</Link>
-            </Button>
-          </div>
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 pt-28">
+      <div className="max-w-md text-center">
+        <p className="font-display text-7xl font-bold gold-emboss" aria-hidden="true">
+          404
+        </p>
+        <h1 className="mt-4 font-display text-3xl text-brand-beige">
+          Esta página não foi encontrada
+        </h1>
+        <p className="mt-3 text-body">
+          O endereço pode ter mudado ou não existir na loja Dom Aldino.
+        </p>
+        <div className="mt-8 flex flex-wrap justify-center gap-3">
+          <Button asChild>
+            <Link to="/loja">Ver a loja</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/">Voltar ao início</Link>
+          </Button>
         </div>
       </div>
-    </DomAldinoShell>
+    </div>
   );
 }
 
@@ -74,18 +77,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
+      { title: "Dom Aldino – Cachaça Premium Artesanal" },
       { name: "theme-color", content: "#141414" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Jost:wght@400..600&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap",
-      },
+      // Pré-carrega a fonte do texto para evitar troca visível de fonte.
+      { rel: "preload", href: jostLatin, as: "font", type: "font/woff2", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
         href: appCss,
